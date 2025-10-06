@@ -39,7 +39,12 @@ export function AmmunitionBatchCard({ batch, components, preferences }: Ammuniti
                 <div className="text-sm text-muted-foreground">of {batch.quantity} rounds</div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={() => setEditOpen(true)}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setEditOpen(true)}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300 bg-transparent"
+                >
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <DeleteAmmunitionBatchButton batch={batch} components={components} />

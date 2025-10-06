@@ -104,7 +104,7 @@ export function SessionsList({ sessions, firearms, ammunitionBatches }: Sessions
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 bg-transparent"
+                  className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300 bg-transparent"
                   onClick={() => setEditingSession(session)}
                 >
                   <Pencil className="mr-2 h-4 w-4" />
@@ -113,7 +113,7 @@ export function SessionsList({ sessions, firearms, ammunitionBatches }: Sessions
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 bg-transparent"
+                  className="flex-1 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300 bg-transparent"
                   onClick={() => setDeletingSession(session)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
