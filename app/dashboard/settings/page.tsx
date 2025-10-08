@@ -19,6 +19,8 @@ export default async function SettingsPage() {
 
   if (!profile) return null
 
+  const ssoAvatarUrl = user.user_metadata?.avatar_url || null
+
   return (
     <div className="container mx-auto max-w-7xl py-6 px-4 space-y-6">
       <div>
@@ -30,7 +32,7 @@ export default async function SettingsPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <AccountSettings profile={profile} />
+        <AccountSettings profile={profile} ssoAvatarUrl={ssoAvatarUrl} />
 
         <Card>
           <CardHeader>

@@ -16,13 +16,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, subscription_status, subscription_end_date")
+    .select("id, email, full_name, avatar_url, subscription_status, subscription_tier, subscription_end_date")
     .eq("id", user.id)
     .single()
 
+  const ssoAvatarUrl = user.user_metadata?.avatar_url || null
+
   return (
     <div className="flex min-h-screen flex-col">
-      <DashboardNav profile={profile} />
+      <DashboardNav profile={profile} ssoAvatarUrl={ssoAvatarUrl} />
       <main className="flex-1">{children}</main>
     </div>
   )

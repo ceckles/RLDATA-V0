@@ -7,17 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/user-avatar"
 import { createBrowserClient } from "@supabase/ssr"
-import { User, Upload, X, Loader2 } from "lucide-react"
+import { Upload, X, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { Profile } from "@/lib/types"
 
 interface AccountSettingsProps {
   profile: Profile
+  ssoAvatarUrl?: string | null
 }
 
-export function AccountSettings({ profile }: AccountSettingsProps) {
+export function AccountSettings({ profile, ssoAvatarUrl }: AccountSettingsProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -32,6 +33,8 @@ export function AccountSettings({ profile }: AccountSettingsProps) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   )
+
+  const currentAvatarUrl = previewUrl || avatarUrl || ssoAvatarUrl || "/default-avatar.png"
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -121,7 +124,6 @@ export function AccountSettings({ profile }: AccountSettingsProps) {
     }
   }
 
-  const displayAvatarUrl = previewUrl || avatarUrl
   const hasChanges =
     fullName !== (profile.full_name || "") ||
     username !== (profile.username || "") ||
@@ -137,18 +139,17 @@ export function AccountSettings({ profile }: AccountSettingsProps) {
       <CardContent className="space-y-6">
         {/* Avatar Upload */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={displayAvatarUrl || "/placeholder.svg"} alt={fullName || "User avatar"} />
-            <AvatarFallback>
-              <User className="h-10 w-10" />
-            </AvatarFallback>
-          </Avatar>
+          <UserAvatar
+            profile={{ ...profile, avatar_url: currentAvatarUrl }}
+            ssoAvatarUrl={null}
+            className="h-20 w-20"
+          />
           <div className="flex-1 space-y-2">
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" asChild disabled={isLoading}>
                 <label className="cursor-pointer">
                   <Upload className="h-4 w-4 mr-2" />
-                  {displayAvatarUrl ? "Change" : "Upload"} Photo
+                  {avatarUrl || previewUrl ? "Change" : "Upload"} Photo
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
@@ -157,14 +158,17 @@ export function AccountSettings({ profile }: AccountSettingsProps) {
                   />
                 </label>
               </Button>
-              {displayAvatarUrl && (
+              {(avatarUrl || previewUrl) && (
                 <Button variant="ghost" size="sm" onClick={handleRemoveImage} disabled={isLoading}>
                   <X className="h-4 w-4 mr-2" />
                   Remove
                 </Button>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">JPG, PNG or WebP. Max 2MB.</p>
+            <p className="text-xs text-muted-foreground">
+              JPG, PNG or WebP. Max 2MB.
+              {!avatarUrl && ssoAvatarUrl && " Currently using your sign-in provider photo."}
+            </p>
           </div>
         </div>
 

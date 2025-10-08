@@ -57,9 +57,9 @@ export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDi
       return
     }
 
-    const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+    const maxSize = 2 * 1024 * 1024
     if (file.size > maxSize) {
-      toast.error("Image must be less than 5MB")
+      toast.error("Image must be less than 2MB")
       return
     }
 
@@ -298,7 +298,7 @@ export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDi
                   <label htmlFor="image" className="cursor-pointer">
                     <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                     <p className="mt-2 text-sm text-muted-foreground">Click to upload firearm image</p>
-                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, or WebP (max 5MB)</p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, or WebP (max 2MB)</p>
                   </label>
                 </div>
               )}

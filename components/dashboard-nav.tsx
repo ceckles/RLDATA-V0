@@ -12,30 +12,20 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SubscriptionBadge } from "@/components/subscription-badge"
 import ThemeToggle from "@/components/theme-toggle"
+import { UserAvatar } from "@/components/user-avatar"
 import type { Profile } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
-import {
-  BarChart3,
-  Box,
-  LogOut,
-  Settings,
-  Target,
-  User,
-  Wrench,
-  Crosshair,
-  Crown,
-  Menu,
-  TrendingUp,
-} from "lucide-react"
+import { BarChart3, Box, LogOut, Settings, Target, Wrench, Crosshair, Crown, Menu, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 
 interface DashboardNavProps {
   profile: Profile | null
+  ssoAvatarUrl?: string | null
 }
 
-export function DashboardNav({ profile }: DashboardNavProps) {
+export function DashboardNav({ profile, ssoAvatarUrl }: DashboardNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -139,8 +129,8 @@ export function DashboardNav({ profile }: DashboardNavProps) {
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <UserAvatar profile={profile} ssoAvatarUrl={ssoAvatarUrl} className="h-8 w-8" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
