@@ -4,6 +4,7 @@ import { SubscriptionBadge } from "@/components/subscription-badge"
 import { UpgradeCard } from "@/components/upgrade-card"
 import { ManageSubscriptionButton } from "@/components/manage-subscription-button"
 import { AccountSettings } from "@/components/account-settings"
+import { CookieSettingsButton } from "@/components/cookie-settings-button"
 import { Settings } from "lucide-react"
 
 export default async function SettingsPage() {
@@ -66,6 +67,16 @@ export default async function SettingsPage() {
 
         {(!profile?.subscription_tier || profile?.subscription_tier === "basic") && <UpgradeCard />}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Privacy & Cookies</CardTitle>
+          <CardDescription>Manage your cookie preferences and privacy settings</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CookieSettingsButton />
+        </CardContent>
+      </Card>
     </div>
   )
 }
