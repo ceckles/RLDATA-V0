@@ -74,7 +74,10 @@ export default async function DashboardPage() {
     { data: sessions },
     { data: components },
     { data: firearms },
-    { data: recentLogs },
+    { data: recentSessions },
+    { data: recentFirearms },
+    { data: recentComponents },
+    { data: recentRecipes },
   ] = await Promise.all([
     supabase.from("components").select("*", { count: "exact", head: true }).eq("user_id", user.id),
     supabase.from("firearms").select("*", { count: "exact", head: true }).eq("user_id", user.id),
@@ -88,11 +91,29 @@ export default async function DashboardPage() {
     supabase.from("components").select("*").eq("user_id", user.id),
     supabase.from("firearms").select("*, maintenance_schedules(*)").eq("user_id", user.id),
     supabase
-      .from("logs")
-      .select("id, level, category, message, created_at")
+      .from("shooting_sessions")
+      .select("id, date, rounds_fired, created_at, firearms(name)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(5),
+    supabase
+      .from("firearms")
+      .select("id, name, caliber, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("components")
+      .select("id, type, manufacturer, model, quantity, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("load_recipes")
+      .select("id, name, caliber, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5),
   ])
 
   const firearmsWithMaintenance =
@@ -174,6 +195,43 @@ export default async function DashboardPage() {
       showLimit: false,
     },
   ]
+
+  const recentActivities = [
+    ...(recentSessions?.map((session) => ({
+      id: session.id,
+      type: "session" as const,
+      action: "Logged shooting session",
+      description: `${session.rounds_fired} rounds with ${session.firearms?.name || "Unknown firearm"}`,
+      created_at: session.created_at,
+      link: "/dashboard/shooting",
+    })) || []),
+    ...(recentFirearms?.map((firearm) => ({
+      id: firearm.id,
+      type: "firearm" as const,
+      action: "Added firearm",
+      description: `${firearm.name} (${firearm.caliber})`,
+      created_at: firearm.created_at,
+      link: "/dashboard/firearms",
+    })) || []),
+    ...(recentComponents?.map((component) => ({
+      id: component.id,
+      type: "component" as const,
+      action: `Added ${component.type}`,
+      description: `${component.manufacturer} ${component.model} (${component.quantity} units)`,
+      created_at: component.created_at,
+      link: "/dashboard/inventory",
+    })) || []),
+    ...(recentRecipes?.map((recipe) => ({
+      id: recipe.id,
+      type: "recipe" as const,
+      action: "Created load recipe",
+      description: `${recipe.name} for ${recipe.caliber}`,
+      created_at: recipe.created_at,
+      link: "/dashboard/reloading",
+    })) || []),
+  ]
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 10)
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6 space-y-6">
@@ -309,7 +367,7 @@ export default async function DashboardPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <RecentActivity activities={recentLogs || []} />
+        <RecentActivity activities={recentActivities} />
 
         <Card>
           <CardHeader>

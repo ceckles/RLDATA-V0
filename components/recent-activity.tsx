@@ -1,64 +1,47 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Activity, LogIn, CreditCard, Box, Wrench, AlertCircle, CheckCircle, Info, AlertTriangle } from "lucide-react"
+import { Activity, Target, File as Rifle, Box, Zap } from "lucide-react"
 import Link from "next/link"
 
-interface ActivityLog {
+interface DataActivity {
   id: string
-  level: "debug" | "info" | "warn" | "error"
-  category: string
-  message: string
+  type: "session" | "firearm" | "component" | "recipe"
+  action: string
+  description: string
   created_at: string
+  link?: string
 }
 
 interface RecentActivityProps {
-  activities: ActivityLog[]
+  activities: DataActivity[]
 }
 
-function getActivityIcon(category: string) {
-  switch (category) {
-    case "auth":
-      return LogIn
-    case "payment":
-      return CreditCard
-    case "user_action":
-      return Activity
-    case "data":
+function getActivityIcon(type: string) {
+  switch (type) {
+    case "session":
+      return Target
+    case "firearm":
+      return Rifle
+    case "component":
       return Box
-    case "system":
-      return Wrench
+    case "recipe":
+      return Zap
     default:
-      return Info
+      return Activity
   }
 }
 
-function getLevelIcon(level: string) {
-  switch (level) {
-    case "error":
-      return AlertCircle
-    case "warn":
-      return AlertTriangle
-    case "info":
-      return CheckCircle
-    case "debug":
-      return Info
+function getActivityColor(type: string) {
+  switch (type) {
+    case "session":
+      return "bg-blue-500/10 text-blue-500"
+    case "firearm":
+      return "bg-orange-500/10 text-orange-500"
+    case "component":
+      return "bg-green-500/10 text-green-500"
+    case "recipe":
+      return "bg-purple-500/10 text-purple-500"
     default:
-      return Info
-  }
-}
-
-function getLevelColor(level: string) {
-  switch (level) {
-    case "error":
-      return "text-red-500"
-    case "warn":
-      return "text-yellow-500"
-    case "info":
-      return "text-blue-500"
-    case "debug":
-      return "text-gray-500"
-    default:
-      return "text-gray-500"
+      return "bg-gray-500/10 text-gray-500"
   }
 }
 
@@ -82,42 +65,45 @@ export function RecentActivity({ activities }: RecentActivityProps) {
           <Activity className="h-5 w-5" />
           Recent Activity
         </CardTitle>
-        <CardDescription>Your latest actions and events</CardDescription>
+        <CardDescription>Your latest reloading data activities</CardDescription>
       </CardHeader>
       <CardContent>
         {activities.length > 0 ? (
           <div className="space-y-4">
             {activities.map((activity) => {
-              const CategoryIcon = getActivityIcon(activity.category)
-              const LevelIcon = getLevelIcon(activity.level)
-              const levelColor = getLevelColor(activity.level)
+              const Icon = getActivityIcon(activity.type)
+              const colorClass = getActivityColor(activity.type)
 
-              return (
+              const content = (
                 <div key={activity.id} className="flex items-start gap-3 border-b pb-3 last:border-0 last:pb-0">
-                  <div className="mt-0.5">
-                    <CategoryIcon className="h-4 w-4 text-muted-foreground" />
+                  <div className={`mt-0.5 p-2 rounded-lg ${colorClass}`}>
+                    <Icon className="h-4 w-4" />
                   </div>
                   <div className="flex-1 space-y-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-medium truncate">{activity.message}</p>
-                      <LevelIcon className={`h-3 w-3 flex-shrink-0 ${levelColor}`} />
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="secondary" className="text-xs">
-                        {activity.category}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">{formatTimeAgo(activity.created_at)}</span>
-                    </div>
+                    <p className="text-sm font-medium">{activity.action}</p>
+                    <p className="text-sm text-muted-foreground truncate">{activity.description}</p>
+                    <span className="text-xs text-muted-foreground">{formatTimeAgo(activity.created_at)}</span>
                   </div>
                 </div>
               )
+
+              return activity.link ? (
+                <Link
+                  key={activity.id}
+                  href={activity.link}
+                  className="block hover:bg-muted/50 rounded-lg -mx-2 px-2 transition-colors"
+                >
+                  {content}
+                </Link>
+              ) : (
+                <div key={activity.id}>{content}</div>
+              )
             })}
-            <Link href="/dashboard/logs" className="block text-sm text-primary hover:underline">
-              View all activity →
-            </Link>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No recent activity</p>
+          <p className="text-sm text-muted-foreground">
+            No recent activity. Start by adding a firearm or logging a session!
+          </p>
         )}
       </CardContent>
     </Card>
