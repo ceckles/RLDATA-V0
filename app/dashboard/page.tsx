@@ -7,7 +7,6 @@ import Link from "next/link"
 import { TIER_LIMITS } from "@/lib/tier-limits"
 import { Badge } from "@/components/ui/badge"
 import type { MaintenanceSchedule } from "@/lib/types"
-import { logger } from "@/lib/logger"
 
 function getMaintenanceStatus(
   schedule: MaintenanceSchedule,
@@ -56,11 +55,8 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    await logger.warn("auth", "Unauthorized dashboard access attempt")
     return null
   }
-
-  await logger.logWithUser(user.id, "info", "user_action", "Dashboard page viewed")
 
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
 

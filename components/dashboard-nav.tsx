@@ -41,9 +41,6 @@ export function DashboardNav({ profile }: DashboardNavProps) {
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  console.log("[v0] DashboardNav profile:", profile)
-  console.log("[v0] DashboardNav role:", profile?.role)
-
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -71,7 +68,6 @@ export function DashboardNav({ profile }: DashboardNavProps) {
     { href: "/dashboard/analytics", label: "Analytics", icon: TrendingUp },
   ]
 
-  // Add admin link only for admin/moderator users
   if (profile?.role === "admin" || profile?.role === "moderator") {
     navItems.push({ href: "/dashboard/admin", label: "Admin", icon: Shield })
   }

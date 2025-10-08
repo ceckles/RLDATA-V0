@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { AnalyticsContent } from "@/components/analytics-content"
-import { logger } from "@/lib/logger"
 
 export default async function AnalyticsPage() {
   const supabase = await createClient()
@@ -11,11 +10,8 @@ export default async function AnalyticsPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    await logger.warn("auth", "Unauthorized analytics page access attempt")
     redirect("/auth/login")
   }
-
-  await logger.logWithUser(user.id, "info", "analytics", "Analytics page viewed")
 
   // Fetch user profile
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
@@ -52,17 +48,6 @@ export default async function AnalyticsPage() {
     )
     .eq("user_id", user.id)
     .order("date", { ascending: false })
-
-  if (sessionsError) {
-    await logger.logWithUser(
-      user.id,
-      "error",
-      "database",
-      "Failed to fetch shooting sessions for analytics",
-      { errorMessage: sessionsError.message },
-      sessionsError as Error,
-    )
-  }
 
   return <AnalyticsContent profile={profile} sessions={sessions || []} />
 }

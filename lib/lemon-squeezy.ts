@@ -1,7 +1,5 @@
 // Lemon Squeezy API client and utilities
 
-import { logger } from "@/lib/logger"
-
 export const LEMON_SQUEEZY_CONFIG = {
   storeId: process.env.LEMON_SQUEEZY_STORE_ID!,
   apiKey: process.env.LEMON_SQUEEZY_API_KEY!,
@@ -34,14 +32,6 @@ export async function createCheckoutUrl(
   planType: "monthly" | "annual" = "monthly",
 ): Promise<string> {
   const variantId = planType === "annual" ? LEMON_SQUEEZY_CONFIG.annualVariantId : LEMON_SQUEEZY_CONFIG.monthlyVariantId
-
-  await logger.info("payment", "Creating LemonSqueezy checkout", {
-    email,
-    userId,
-    planType,
-    variantId,
-    storeId: LEMON_SQUEEZY_CONFIG.storeId,
-  })
 
   const requestBody = {
     data: {
@@ -91,24 +81,10 @@ export async function createCheckoutUrl(
       errorDetails = responseText
     }
 
-    await logger.error("payment", "LemonSqueezy checkout creation failed", new Error(`API error: ${response.status}`), {
-      status: response.status,
-      statusText: response.statusText,
-      errorDetails,
-      userId,
-      email,
-    })
-
     throw new Error(`LemonSqueezy API error (${response.status}): ${JSON.stringify(errorDetails)}`)
   }
 
   const data = JSON.parse(responseText)
-
-  await logger.info("payment", "LemonSqueezy checkout URL created successfully", {
-    userId,
-    email,
-    hasUrl: !!data.data.attributes.url,
-  })
 
   return data.data.attributes.url
 }
@@ -122,10 +98,6 @@ export async function getSubscription(subscriptionId: string): Promise<LemonSque
   })
 
   if (!response.ok) {
-    await logger.warn("payment", "Failed to fetch subscription", {
-      subscriptionId,
-      status: response.status,
-    })
     return null
   }
 
@@ -134,8 +106,6 @@ export async function getSubscription(subscriptionId: string): Promise<LemonSque
 }
 
 export async function cancelSubscription(subscriptionId: string): Promise<boolean> {
-  await logger.info("payment", "Cancelling subscription", { subscriptionId })
-
   const response = await fetch(`https://api.lemonsqueezy.com/v1/subscriptions/${subscriptionId}`, {
     method: "DELETE",
     headers: {
@@ -145,15 +115,6 @@ export async function cancelSubscription(subscriptionId: string): Promise<boolea
   })
 
   const success = response.ok
-
-  if (success) {
-    await logger.info("payment", "Subscription cancelled successfully", { subscriptionId })
-  } else {
-    await logger.error("payment", "Failed to cancel subscription", undefined, {
-      subscriptionId,
-      status: response.status,
-    })
-  }
 
   return success
 }
@@ -167,10 +128,6 @@ export async function getCustomerPortalUrl(customerId: string): Promise<string> 
   })
 
   if (!response.ok) {
-    await logger.error("payment", "Failed to get customer portal URL", undefined, {
-      customerId,
-      status: response.status,
-    })
     throw new Error("Failed to get customer portal URL")
   }
 
