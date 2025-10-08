@@ -26,13 +26,18 @@ export default function LoginPage() {
     setError(null)
 
     try {
+      console.info("[Auth] Login attempt", { email })
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
       if (error) throw error
+
+      console.info("[Auth] Login successful", { email })
       router.push("/dashboard")
     } catch (error: unknown) {
+      console.error("[Auth] Login failed", { email, error: error instanceof Error ? error.message : String(error) })
       setError(error instanceof Error ? error.message : "An error occurred")
     } finally {
       setIsLoading(false)
@@ -45,6 +50,8 @@ export default function LoginPage() {
     setError(null)
 
     try {
+      console.info("[Auth] Google OAuth login attempt")
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -53,6 +60,9 @@ export default function LoginPage() {
       })
       if (error) throw error
     } catch (error: unknown) {
+      console.error("[Auth] Google OAuth login failed", {
+        error: error instanceof Error ? error.message : String(error),
+      })
       setError(error instanceof Error ? error.message : "An error occurred")
       setIsLoading(false)
     }

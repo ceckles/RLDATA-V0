@@ -1,16 +1,17 @@
 import { createClient } from "@/lib/supabase/server"
 import { createCheckoutUrl } from "@/lib/lemon-squeezy"
 import { NextResponse } from "next/server"
+import { logger } from "@/lib/logger"
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const planType = body.planType || "monthly"
 
-    console.log("[v0] Checkout - Request body:", body)
-    console.log("[v0] Checkout - Plan type:", planType)
+    await logger.logWithRequest("info", "payment", "Subscription checkout initiated", request, { planType })
 
     if (planType !== "monthly" && planType !== "annual") {
+      await logger.logWithRequest("warn", "payment", "Invalid plan type provided", request, { planType })
       return NextResponse.json({ error: "Invalid plan type" }, { status: 400 })
     }
 
@@ -21,18 +22,17 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser()
 
     if (!user) {
+      await logger.logWithRequest("warn", "payment", "Unauthorized checkout attempt", request)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("[v0] Checkout - User ID:", user.id)
-    console.log("[v0] Checkout - User email:", user.email)
-
     let { data: profile, error: profileError } = await supabase.from("profiles").select("*").eq("id", user.id).single()
 
-    console.log("[v0] Checkout - Profile query result:", { profile, profileError })
-
     if (!profile) {
-      console.log("[v0] Checkout - Creating new profile for user:", user.id)
+      await logger.logWithUser(user.id, "info", "payment", "Creating profile for checkout", {
+        email: user.email,
+        planType,
+      })
 
       const { data: newProfile, error: createError } = await supabase
         .from("profiles")
@@ -46,8 +46,18 @@ export async function POST(request: Request) {
         .single()
 
       if (createError) {
-        console.error("[v0] Checkout - Failed to create profile:", createError)
-        console.error("[v0] Checkout - Error details:", JSON.stringify(createError, null, 2))
+        await logger.logWithUser(
+          user.id,
+          "error",
+          "payment",
+          "Failed to create profile for checkout",
+          {
+            errorMessage: createError.message,
+            errorHint: createError.hint,
+          },
+          createError as Error,
+        )
+
         return NextResponse.json(
           {
             error: "Failed to create profile",
@@ -58,27 +68,42 @@ export async function POST(request: Request) {
         )
       }
 
-      console.log("[v0] Checkout - Profile created successfully:", newProfile)
+      await logger.logWithUser(user.id, "info", "payment", "Profile created successfully for checkout")
       profile = newProfile
     }
 
     if (profile.subscription_tier === "premium") {
+      await logger.logWithUser(user.id, "warn", "payment", "User already has premium subscription", {
+        currentTier: profile.subscription_tier,
+      })
       return NextResponse.json({ error: "Already subscribed" }, { status: 400 })
     }
 
-    console.log("[v0] Checkout - Environment check:")
-    console.log("[v0] Checkout - LEMON_SQUEEZY_STORE_ID:", process.env.LEMON_SQUEEZY_STORE_ID)
-    console.log("[v0] Checkout - LEMON_SQUEEZY_MONTHLY_VARIANT_ID:", process.env.LEMON_SQUEEZY_MONTHLY_VARIANT_ID)
-    console.log("[v0] Checkout - LEMON_SQUEEZY_ANNUAL_VARIANT_ID:", process.env.LEMON_SQUEEZY_ANNUAL_VARIANT_ID)
-    console.log("[v0] Checkout - Selected plan type:", planType)
+    await logger.logWithUser(user.id, "info", "payment", "Creating checkout URL", {
+      email: profile.email,
+      planType,
+    })
 
-    console.log("[v0] Checkout - Calling createCheckoutUrl...")
     const checkoutUrl = await createCheckoutUrl(profile.email, user.id, planType)
-    console.log("[v0] Checkout - Checkout URL created successfully:", checkoutUrl)
+
+    await logger.logWithUser(user.id, "info", "payment", "Checkout URL created successfully", {
+      planType,
+      hasUrl: !!checkoutUrl,
+    })
 
     return NextResponse.json({ url: checkoutUrl })
   } catch (error) {
-    console.error("[v0] Checkout error:", error)
+    await logger.logWithRequest(
+      "error",
+      "payment",
+      "Subscription checkout failed",
+      request,
+      {
+        errorMessage: error instanceof Error ? error.message : String(error),
+      },
+      error instanceof Error ? error : new Error(String(error)),
+    )
+
     return NextResponse.json(
       {
         error: "Failed to create checkout",

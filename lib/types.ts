@@ -217,3 +217,17 @@ export interface UserTrackingPreferences {
   created_at: string
   updated_at: string
 }
+
+export interface Log {
+  id: string
+  user_id: string | null
+  level: "debug" | "info" | "warn" | "error"
+  category: string
+  message: string
+  metadata: Record<string, any>
+  stack_trace: string | null
+  user_agent: string | null
+  ip_address: string | null
+  path: string | null
+  created_at: string
+}

@@ -26,6 +26,7 @@ import {
   Crown,
   Menu,
   TrendingUp,
+  FileText,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -65,6 +66,7 @@ export function DashboardNav({ profile }: DashboardNavProps) {
     { href: "/dashboard/reloading", label: "Reloading", icon: Wrench },
     { href: "/dashboard/shooting", label: "Shooting", icon: Crosshair },
     { href: "/dashboard/analytics", label: "Analytics", icon: TrendingUp },
+    { href: "/dashboard/logs", label: "Logs", icon: FileText },
   ]
 
   return (
