@@ -119,7 +119,7 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
               <Card key={firearm.id} className={maintenanceStatus?.status === "overdue" ? "border-red-500" : ""}>
                 {firearm.image_url && (
                   <div
-                    className="h-32 bg-cover bg-center rounded-t-lg relative"
+                    className="h-48 bg-cover bg-top rounded-t-lg relative"
                     style={{ backgroundImage: `url(${firearm.image_url})` }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background rounded-t-lg" />

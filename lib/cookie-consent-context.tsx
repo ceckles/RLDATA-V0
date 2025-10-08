@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 
 type ConsentStatus = "not-set" | "essential-only" | "all-accepted"
 
@@ -21,12 +21,41 @@ interface CookieConsentContextType {
 
 const CookieConsentContext = createContext<CookieConsentContextType | undefined>(undefined)
 
+const CONSENT_STORAGE_KEY = "cookie-consent"
+
 export function CookieConsentProvider({ children }: { children: ReactNode }) {
-  const [consentState, setConsentState] = useState<CookieConsentState>({
-    consent: "not-set",
-    timestamp: null,
+  const [consentState, setConsentState] = useState<CookieConsentState>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(CONSENT_STORAGE_KEY)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          return {
+            consent: parsed.consent,
+            timestamp: parsed.timestamp ? new Date(parsed.timestamp) : null,
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load cookie consent from localStorage:", error)
+      }
+    }
+    return {
+      consent: "not-set",
+      timestamp: null,
+    }
   })
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && consentState.consent !== "not-set") {
+      try {
+        localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(consentState))
+      } catch (error) {
+        console.error("Failed to save cookie consent to localStorage:", error)
+      }
+    }
+  }, [consentState])
 
   const acceptAll = useCallback(() => {
     setConsentState({
