@@ -22,6 +22,7 @@ import {
   Bar,
   BarChart,
   ReferenceLine,
+  Legend,
 } from "recharts"
 import Link from "next/link"
 
@@ -183,14 +184,13 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
     })
     .filter(Boolean)
 
-  const { shotVelocityChartData, velocityChartConfig, hasVelocityData } = useMemo(() => {
+  const { shotVelocityChartData, velocityChartConfig, sessionKeys, hasVelocityData } = useMemo(() => {
     if (selectedSessionData.length === 0) {
-      return { shotVelocityChartData: [], velocityChartConfig: {}, hasVelocityData: false }
+      return { shotVelocityChartData: [], velocityChartConfig: {}, sessionKeys: [], hasVelocityData: false }
     }
 
-    // Get all sessions with velocity data
     const sessionsWithVelocity = selectedSessionData
-      .map((session) => {
+      .map((session, index) => {
         const shotData = session.shot_data || []
         const velocityShots = shotData
           .filter((shot) => shot.velocity !== null)
@@ -200,14 +200,16 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
 
         return {
           sessionId: session.id,
+          sessionKey: `session${index}`, // Simple key for CSS variables
           sessionLabel: `${new Date(session.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${session.firearms?.name || "Unknown"}`,
           shots: velocityShots,
+          color: `hsl(var(--chart-${(index % 5) + 1}))`, // Direct color reference
         }
       })
       .filter(Boolean)
 
     if (sessionsWithVelocity.length === 0) {
-      return { shotVelocityChartData: [], velocityChartConfig: {}, hasVelocityData: false }
+      return { shotVelocityChartData: [], velocityChartConfig: {}, sessionKeys: [], hasVelocityData: false }
     }
 
     // Find the maximum number of shots across all sessions
@@ -220,25 +222,26 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
 
       sessionsWithVelocity.forEach((session) => {
         const shot = session!.shots.find((s) => s.shot_number === shotNumber)
-        dataPoint[session!.sessionId] = shot?.velocity || null
+        dataPoint[session!.sessionKey] = shot?.velocity || null
       })
 
       return dataPoint
     })
 
+    // Create config with simple keys
     const config: any = {}
-    sessionsWithVelocity.forEach((session, index) => {
-      config[session!.sessionId] = {
+    sessionsWithVelocity.forEach((session) => {
+      config[session!.sessionKey] = {
         label: session!.sessionLabel,
-        color: `hsl(var(--chart-${(index % 5) + 1}))`,
+        color: session!.color,
       }
     })
 
     return {
       shotVelocityChartData: chartData,
       velocityChartConfig: config,
+      sessionKeys: sessionsWithVelocity.map((s) => ({ key: s!.sessionKey, color: s!.color })),
       hasVelocityData: true,
-      sessionsWithVelocity,
     }
   }, [selectedSessionData])
 
@@ -596,25 +599,8 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                             label={{ value: "Velocity (fps)", angle: -90, position: "insideLeft", fontSize: 11 }}
                             domain={["auto", "auto"]}
                           />
-                          <ChartTooltip
-                            content={
-                              <ChartTooltipContent
-                                formatter={(value, name) => {
-                                  const config = velocityChartConfig[name]
-                                  return (
-                                    <div className="flex items-center gap-2">
-                                      <div
-                                        className="h-2.5 w-2.5 rounded-full"
-                                        style={{ backgroundColor: config?.color }}
-                                      />
-                                      <span className="text-xs text-muted-foreground">{config?.label}:</span>
-                                      <span className="font-bold">{value} fps</span>
-                                    </div>
-                                  )
-                                }}
-                              />
-                            }
-                          />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Legend />
                           {selectedSessions.length === 1 && velocityStats[0] && (
                             <ReferenceLine
                               y={velocityStats[0].mean}
@@ -629,15 +615,15 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                               }}
                             />
                           )}
-                          {Object.keys(velocityChartConfig).map((sessionId) => (
+                          {sessionKeys.map((session) => (
                             <Line
-                              key={sessionId}
+                              key={session.key}
                               type="monotone"
-                              dataKey={sessionId}
-                              stroke={`var(--color-${sessionId})`}
+                              dataKey={session.key}
+                              stroke={session.color}
                               strokeWidth={2.5}
                               dot={{
-                                fill: `var(--color-${sessionId})`,
+                                fill: session.color,
                                 r: 4,
                                 strokeWidth: 2,
                                 stroke: "hsl(var(--background))",
@@ -646,7 +632,7 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                                 r: 6,
                                 strokeWidth: 2,
                                 stroke: "hsl(var(--background))",
-                                fill: `var(--color-${sessionId})`,
+                                fill: session.color,
                               }}
                               connectNulls={false}
                             />
