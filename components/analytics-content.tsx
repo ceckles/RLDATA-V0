@@ -226,20 +226,11 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
       return dataPoint
     })
 
-    // Create chart config with colors for each session
-    const chartColors = [
-      "hsl(var(--chart-1))",
-      "hsl(var(--chart-2))",
-      "hsl(var(--chart-3))",
-      "hsl(var(--chart-4))",
-      "hsl(var(--chart-5))",
-    ]
-
     const config: any = {}
     sessionsWithVelocity.forEach((session, index) => {
       config[session!.sessionId] = {
         label: session!.sessionLabel,
-        color: chartColors[index % chartColors.length],
+        color: `hsl(var(--chart-${(index % 5) + 1}))`,
       }
     })
 
@@ -643,10 +634,20 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                               key={sessionId}
                               type="monotone"
                               dataKey={sessionId}
-                              stroke={velocityChartConfig[sessionId].color}
-                              strokeWidth={2}
-                              dot={{ r: 4, strokeWidth: 2, stroke: "hsl(var(--background))" }}
-                              activeDot={{ r: 6, strokeWidth: 2 }}
+                              stroke={`var(--color-${sessionId})`}
+                              strokeWidth={2.5}
+                              dot={{
+                                fill: `var(--color-${sessionId})`,
+                                r: 4,
+                                strokeWidth: 2,
+                                stroke: "hsl(var(--background))",
+                              }}
+                              activeDot={{
+                                r: 6,
+                                strokeWidth: 2,
+                                stroke: "hsl(var(--background))",
+                                fill: `var(--color-${sessionId})`,
+                              }}
                               connectNulls={false}
                             />
                           ))}
