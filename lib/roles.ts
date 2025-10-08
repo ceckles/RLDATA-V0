@@ -21,6 +21,25 @@ export async function userHasRole(userId: string, roleName: UserRole): Promise<b
 }
 
 /**
+ * Check if a user has a specific role (alias for userHasRole)
+ */
+export async function hasRole(userId: string, roleName: UserRole): Promise<boolean> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.rpc("user_has_role", {
+    user_id_param: userId,
+    role_name_param: roleName,
+  })
+
+  if (error) {
+    console.error("Error checking user role:", error)
+    return false
+  }
+
+  return data === true
+}
+
+/**
  * Check if a user has any of the specified roles
  */
 export async function userHasAnyRole(userId: string, roleNames: UserRole[]): Promise<boolean> {

@@ -14,10 +14,22 @@ import { SubscriptionBadge } from "@/components/subscription-badge"
 import ThemeToggle from "@/components/theme-toggle"
 import { NavbarAvatar } from "@/components/navbar-avatar"
 import type { Profile } from "@/lib/types"
-import { BarChart3, Box, LogOut, Settings, Target, Wrench, Crosshair, Crown, Menu, TrendingUp } from "lucide-react"
+import {
+  BarChart3,
+  Box,
+  LogOut,
+  Settings,
+  Target,
+  Wrench,
+  Crosshair,
+  Crown,
+  Menu,
+  TrendingUp,
+  Shield,
+} from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface DashboardNavProps {
   profile: Profile | null
@@ -28,6 +40,22 @@ export function DashboardNav({ profile, ssoAvatarUrl }: DashboardNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const response = await fetch("/api/roles")
+        if (response.ok) {
+          const data = await response.json()
+          setIsAdmin(data.roles?.some((r: any) => r.name === "admin") || false)
+        }
+      } catch (error) {
+        console.error("Failed to check admin status:", error)
+      }
+    }
+    checkAdminStatus()
+  }, [])
 
   const handleSignOut = async () => {
     const { createClient } = await import("@/lib/supabase/client")
@@ -55,6 +83,7 @@ export function DashboardNav({ profile, ssoAvatarUrl }: DashboardNavProps) {
     { href: "/dashboard/reloading", label: "Reloading", icon: Wrench },
     { href: "/dashboard/shooting", label: "Shooting", icon: Crosshair },
     { href: "/dashboard/analytics", label: "Analytics", icon: TrendingUp },
+    ...(isAdmin ? [{ href: "/dashboard/admin", label: "Admin", icon: Shield }] : []),
   ]
 
   return (
