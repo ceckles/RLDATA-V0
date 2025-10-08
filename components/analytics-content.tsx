@@ -23,6 +23,8 @@ import {
   BarChart,
   ReferenceLine,
   Legend,
+  ResponsiveContainer,
+  Tooltip,
 } from "recharts"
 import Link from "next/link"
 
@@ -184,10 +186,19 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
     })
     .filter(Boolean)
 
-  const { shotVelocityChartData, velocityChartConfig, sessionKeys, hasVelocityData } = useMemo(() => {
+  const { shotVelocityChartData, sessionColors, hasVelocityData } = useMemo(() => {
     if (selectedSessionData.length === 0) {
-      return { shotVelocityChartData: [], velocityChartConfig: {}, sessionKeys: [], hasVelocityData: false }
+      return { shotVelocityChartData: [], sessionColors: [], hasVelocityData: false }
     }
+
+    // Define actual color values that will work
+    const colorPalette = [
+      "#f97316", // orange-500
+      "#3b82f6", // blue-500
+      "#10b981", // green-500
+      "#f59e0b", // amber-500
+      "#8b5cf6", // violet-500
+    ]
 
     const sessionsWithVelocity = selectedSessionData
       .map((session, index) => {
@@ -200,16 +211,16 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
 
         return {
           sessionId: session.id,
-          sessionKey: `session${index}`, // Simple key for CSS variables
+          sessionKey: `session${index}`,
           sessionLabel: `${new Date(session.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${session.firearms?.name || "Unknown"}`,
+          color: colorPalette[index % colorPalette.length],
           shots: velocityShots,
-          chartIndex: (index % 5) + 1,
         }
       })
       .filter(Boolean)
 
     if (sessionsWithVelocity.length === 0) {
-      return { shotVelocityChartData: [], velocityChartConfig: {}, sessionKeys: [], hasVelocityData: false }
+      return { shotVelocityChartData: [], sessionColors: [], hasVelocityData: false }
     }
 
     const maxShots = Math.max(...sessionsWithVelocity.map((s) => s!.shots.length))
@@ -226,18 +237,13 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
       return dataPoint
     })
 
-    const config: any = {}
-    sessionsWithVelocity.forEach((session) => {
-      config[session!.sessionKey] = {
-        label: session!.sessionLabel,
-        color: `hsl(var(--chart-${session!.chartIndex}))`,
-      }
-    })
-
     return {
       shotVelocityChartData: chartData,
-      velocityChartConfig: config,
-      sessionKeys: sessionsWithVelocity.map((s) => s!.sessionKey),
+      sessionColors: sessionsWithVelocity.map((s) => ({
+        key: s!.sessionKey,
+        label: s!.sessionLabel,
+        color: s!.color,
+      })),
       hasVelocityData: true,
     }
   }, [selectedSessionData])
@@ -581,61 +587,71 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ChartContainer config={velocityChartConfig} className="h-[300px]">
-                        <LineChart data={shotVelocityChartData}>
-                          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis
-                            dataKey="shotNumber"
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={11}
-                            label={{ value: "Shot Number", position: "insideBottom", offset: -5, fontSize: 11 }}
-                          />
-                          <YAxis
-                            stroke="hsl(var(--muted-foreground))"
-                            fontSize={11}
-                            label={{ value: "Velocity (fps)", angle: -90, position: "insideLeft", fontSize: 11 }}
-                            domain={["auto", "auto"]}
-                          />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Legend />
-                          {selectedSessions.length === 1 && velocityStats[0] && (
-                            <ReferenceLine
-                              y={velocityStats[0].mean}
+                      <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={shotVelocityChartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis
+                              dataKey="shotNumber"
                               stroke="hsl(var(--muted-foreground))"
-                              strokeDasharray="3 3"
-                              strokeWidth={1.5}
-                              label={{
-                                value: `Mean: ${velocityStats[0].mean} fps`,
-                                position: "right",
-                                fontSize: 10,
-                                fill: "hsl(var(--muted-foreground))",
-                              }}
+                              fontSize={11}
+                              label={{ value: "Shot Number", position: "insideBottom", offset: -5, fontSize: 11 }}
                             />
-                          )}
-                          {sessionKeys.map((sessionKey) => (
-                            <Line
-                              key={sessionKey}
-                              type="monotone"
-                              dataKey={sessionKey}
-                              stroke={`var(--color-${sessionKey})`}
-                              strokeWidth={2.5}
-                              dot={{
-                                fill: `var(--color-${sessionKey})`,
-                                r: 4,
-                                strokeWidth: 2,
-                                stroke: "hsl(var(--background))",
-                              }}
-                              activeDot={{
-                                r: 6,
-                                strokeWidth: 2,
-                                stroke: "hsl(var(--background))",
-                                fill: `var(--color-${sessionKey})`,
-                              }}
-                              connectNulls={false}
+                            <YAxis
+                              stroke="hsl(var(--muted-foreground))"
+                              fontSize={11}
+                              label={{ value: "Velocity (fps)", angle: -90, position: "insideLeft", fontSize: 11 }}
+                              domain={["auto", "auto"]}
                             />
-                          ))}
-                        </LineChart>
-                      </ChartContainer>
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "hsl(var(--popover))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: "6px",
+                              }}
+                              labelStyle={{ color: "hsl(var(--popover-foreground))" }}
+                            />
+                            <Legend />
+                            {selectedSessions.length === 1 && velocityStats[0] && (
+                              <ReferenceLine
+                                y={velocityStats[0].mean}
+                                stroke="hsl(var(--muted-foreground))"
+                                strokeDasharray="3 3"
+                                strokeWidth={1.5}
+                                label={{
+                                  value: `Mean: ${velocityStats[0].mean} fps`,
+                                  position: "right",
+                                  fontSize: 10,
+                                  fill: "hsl(var(--muted-foreground))",
+                                }}
+                              />
+                            )}
+                            {sessionColors.map((session) => (
+                              <Line
+                                key={session.key}
+                                type="monotone"
+                                dataKey={session.key}
+                                name={session.label}
+                                stroke={session.color}
+                                strokeWidth={3}
+                                dot={{
+                                  fill: session.color,
+                                  r: 5,
+                                  strokeWidth: 2,
+                                  stroke: "#fff",
+                                }}
+                                activeDot={{
+                                  r: 7,
+                                  strokeWidth: 2,
+                                  stroke: "#fff",
+                                  fill: session.color,
+                                }}
+                                connectNulls={false}
+                              />
+                            ))}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
