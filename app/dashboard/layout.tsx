@@ -22,12 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq("id", user.id)
     .single()
 
-  console.log("[v0] Dashboard Layout - profile.avatar_url:", profile?.avatar_url)
-  console.log("[v0] Dashboard Layout - full profile:", profile)
-
   const ssoAvatarUrl = user.user_metadata?.avatar_url || null
-
-  console.log("[v0] Dashboard Layout - ssoAvatarUrl:", ssoAvatarUrl)
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -12,7 +12,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SubscriptionBadge } from "@/components/subscription-badge"
 import ThemeToggle from "@/components/theme-toggle"
-import { UserAvatar } from "@/components/user-avatar"
+import { NavbarAvatar } from "@/components/navbar-avatar"
 import type { Profile } from "@/lib/types"
 import { BarChart3, Box, LogOut, Settings, Target, Wrench, Crosshair, Crown, Menu, TrendingUp } from "lucide-react"
 import Link from "next/link"
@@ -28,10 +28,6 @@ export function DashboardNav({ profile, ssoAvatarUrl }: DashboardNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  console.log("[v0] DashboardNav - received profile:", profile)
-  console.log("[v0] DashboardNav - received profile.avatar_url:", profile?.avatar_url)
-  console.log("[v0] DashboardNav - received ssoAvatarUrl:", ssoAvatarUrl)
 
   const handleSignOut = async () => {
     const { createClient } = await import("@/lib/supabase/client")
@@ -134,7 +130,11 @@ export function DashboardNav({ profile, ssoAvatarUrl }: DashboardNavProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
-                <UserAvatar profile={profile} ssoAvatarUrl={ssoAvatarUrl} className="h-8 w-8" />
+                <NavbarAvatar
+                  ssoAvatarUrl={ssoAvatarUrl || null}
+                  userEmail={profile?.email || ""}
+                  className="h-8 w-8"
+                />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
