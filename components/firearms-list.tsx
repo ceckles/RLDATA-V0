@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Firearm, MaintenanceSchedule } from "@/lib/types"
 import { Edit, Trash2, AlertTriangle } from "lucide-react"
 import { useState } from "react"
@@ -23,8 +24,8 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
     const firearmSchedules = maintenanceSchedules.filter((s) => s.firearm_id === firearm.id)
     if (firearmSchedules.length === 0) return null
 
-    let overdueCount = 0
-    let dueSoonCount = 0
+    const overdueItems: { name: string; message: string }[] = []
+    const dueSoonItems: { name: string; message: string }[] = []
 
     firearmSchedules.forEach((schedule) => {
       if (schedule.interval_type === "rounds") {
@@ -32,9 +33,15 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
         const roundsUntilDue = schedule.interval_value - roundsSinceLastMaintenance
 
         if (roundsUntilDue <= 0) {
-          overdueCount++
+          overdueItems.push({
+            name: schedule.name,
+            message: `Overdue by ${Math.abs(roundsUntilDue)} rounds`,
+          })
         } else if (roundsUntilDue <= schedule.interval_value * 0.2) {
-          dueSoonCount++
+          dueSoonItems.push({
+            name: schedule.name,
+            message: `Due in ${roundsUntilDue} rounds`,
+          })
         }
       } else if (schedule.interval_type === "days" && schedule.last_completed_at) {
         const daysSinceLastMaintenance = Math.floor(
@@ -43,18 +50,34 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
         const daysUntilDue = schedule.interval_value - daysSinceLastMaintenance
 
         if (daysUntilDue <= 0) {
-          overdueCount++
+          overdueItems.push({
+            name: schedule.name,
+            message: `Overdue by ${Math.abs(daysUntilDue)} days`,
+          })
         } else if (daysUntilDue <= schedule.interval_value * 0.2) {
-          dueSoonCount++
+          dueSoonItems.push({
+            name: schedule.name,
+            message: `Due in ${daysUntilDue} days`,
+          })
         }
       }
     })
 
-    if (overdueCount > 0) {
-      return { status: "overdue", count: overdueCount, message: `${overdueCount} overdue` }
+    if (overdueItems.length > 0) {
+      return {
+        status: "overdue",
+        count: overdueItems.length,
+        message: `${overdueItems.length} overdue`,
+        items: overdueItems,
+      }
     }
-    if (dueSoonCount > 0) {
-      return { status: "due-soon", count: dueSoonCount, message: `${dueSoonCount} due soon` }
+    if (dueSoonItems.length > 0) {
+      return {
+        status: "due-soon",
+        count: dueSoonItems.length,
+        message: `${dueSoonItems.length} due soon`,
+        items: dueSoonItems,
+      }
     }
     return null
   }
@@ -86,108 +109,127 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {firearms.map((firearm) => {
-          const maintenanceStatus = getFirearmMaintenanceStatus(firearm)
-          const firearmSchedules = maintenanceSchedules.filter((s) => s.firearm_id === firearm.id)
+      <TooltipProvider>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {firearms.map((firearm) => {
+            const maintenanceStatus = getFirearmMaintenanceStatus(firearm)
+            const firearmSchedules = maintenanceSchedules.filter((s) => s.firearm_id === firearm.id)
 
-          return (
-            <Card key={firearm.id} className={maintenanceStatus?.status === "overdue" ? "border-red-500" : ""}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{firearm.manufacturer}</CardTitle>
-                    <CardDescription>{firearm.model}</CardDescription>
-                  </div>
-                  <div className="flex flex-col gap-1 items-end">
-                    <Badge variant="outline" className={`capitalize ${getFirearmBadgeColor(firearm.type)}`}>
-                      {firearm.type}
-                    </Badge>
-                    {maintenanceStatus && (
-                      <Badge
-                        variant="outline"
-                        className={
-                          maintenanceStatus.status === "overdue"
-                            ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-800"
-                            : "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800"
-                        }
-                      >
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        {maintenanceStatus.message}
+            return (
+              <Card key={firearm.id} className={maintenanceStatus?.status === "overdue" ? "border-red-500" : ""}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <CardTitle className="text-lg">{firearm.manufacturer}</CardTitle>
+                      <CardDescription>{firearm.model}</CardDescription>
+                    </div>
+                    <div className="flex flex-col gap-1 items-end">
+                      <Badge variant="outline" className={`capitalize ${getFirearmBadgeColor(firearm.type)}`}>
+                        {firearm.type}
                       </Badge>
+                      {maintenanceStatus && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Badge
+                              variant="outline"
+                              className={
+                                maintenanceStatus.status === "overdue"
+                                  ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-800 cursor-help"
+                                  : "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800 cursor-help"
+                              }
+                            >
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {maintenanceStatus.message}
+                            </Badge>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-semibold text-sm">
+                                {maintenanceStatus.status === "overdue" ? "Overdue Maintenance:" : "Due Soon:"}
+                              </p>
+                              {maintenanceStatus.items?.map((item, idx) => (
+                                <div key={idx} className="text-sm">
+                                  <p className="font-medium">{item.name}</p>
+                                  <p className="text-muted-foreground">{item.message}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Caliber:</span>
+                      <p className="font-medium">{firearm.caliber}</p>
+                    </div>
+                    {firearm.serial_number && (
+                      <div>
+                        <span className="text-muted-foreground">Serial:</span>
+                        <p className="font-medium">{firearm.serial_number}</p>
+                      </div>
                     )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Caliber:</span>
-                    <p className="font-medium">{firearm.caliber}</p>
-                  </div>
-                  {firearm.serial_number && (
+                    {firearm.barrel_length && (
+                      <div>
+                        <span className="text-muted-foreground">Barrel:</span>
+                        <p className="font-medium">{firearm.barrel_length}"</p>
+                      </div>
+                    )}
+                    {firearm.twist_rate && (
+                      <div>
+                        <span className="text-muted-foreground">Twist:</span>
+                        <p className="font-medium">1:{firearm.twist_rate}"</p>
+                      </div>
+                    )}
+                    {firearm.purchase_date && (
+                      <div>
+                        <span className="text-muted-foreground">Purchased:</span>
+                        <p className="font-medium">{new Date(firearm.purchase_date).toLocaleDateString()}</p>
+                      </div>
+                    )}
                     <div>
-                      <span className="text-muted-foreground">Serial:</span>
-                      <p className="font-medium">{firearm.serial_number}</p>
+                      <span className="text-muted-foreground">Round Count:</span>
+                      <p className="font-medium">{firearm.round_count.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  {firearm.notes && (
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Notes:</span>
+                      <p className="mt-1">{firearm.notes}</p>
                     </div>
                   )}
-                  {firearm.barrel_length && (
-                    <div>
-                      <span className="text-muted-foreground">Barrel:</span>
-                      <p className="font-medium">{firearm.barrel_length}"</p>
+                  <div className="flex flex-col gap-2 pt-2">
+                    <MaintenanceScheduleDialog firearm={firearm} schedules={firearmSchedules} />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300 bg-transparent"
+                        onClick={() => setEditingFirearm(firearm)}
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300 bg-transparent"
+                        onClick={() => setDeletingFirearm(firearm)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </Button>
                     </div>
-                  )}
-                  {firearm.twist_rate && (
-                    <div>
-                      <span className="text-muted-foreground">Twist:</span>
-                      <p className="font-medium">1:{firearm.twist_rate}"</p>
-                    </div>
-                  )}
-                  {firearm.purchase_date && (
-                    <div>
-                      <span className="text-muted-foreground">Purchased:</span>
-                      <p className="font-medium">{new Date(firearm.purchase_date).toLocaleDateString()}</p>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-muted-foreground">Round Count:</span>
-                    <p className="font-medium">{firearm.round_count.toLocaleString()}</p>
                   </div>
-                </div>
-                {firearm.notes && (
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Notes:</span>
-                    <p className="mt-1">{firearm.notes}</p>
-                  </div>
-                )}
-                <div className="flex flex-col gap-2 pt-2">
-                  <MaintenanceScheduleDialog firearm={firearm} schedules={firearmSchedules} />
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300 bg-transparent"
-                      onClick={() => setEditingFirearm(firearm)}
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300 bg-transparent"
-                      onClick={() => setDeletingFirearm(firearm)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      </TooltipProvider>
 
       {editingFirearm && (
         <EditFirearmDialog
