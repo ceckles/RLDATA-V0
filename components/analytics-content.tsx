@@ -594,14 +594,28 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                               <XAxis
                                 dataKey="shotNumber"
-                                stroke="hsl(var(--muted-foreground))"
-                                fontSize={11}
-                                label={{ value: "Shot Number", position: "insideBottom", offset: -5, fontSize: 11 }}
+                                stroke="hsl(var(--foreground))"
+                                tick={{ fill: "hsl(var(--foreground))" }}
+                                fontSize={12}
+                                label={{
+                                  value: "Shot Number",
+                                  position: "insideBottom",
+                                  offset: -5,
+                                  fontSize: 12,
+                                  fill: "hsl(var(--foreground))",
+                                }}
                               />
                               <YAxis
-                                stroke="hsl(var(--muted-foreground))"
-                                fontSize={11}
-                                label={{ value: "Velocity (fps)", angle: -90, position: "insideLeft", fontSize: 11 }}
+                                stroke="hsl(var(--foreground))"
+                                tick={{ fill: "hsl(var(--foreground))" }}
+                                fontSize={12}
+                                label={{
+                                  value: "Velocity (fps)",
+                                  angle: -90,
+                                  position: "insideLeft",
+                                  fontSize: 12,
+                                  fill: "hsl(var(--foreground))",
+                                }}
                                 domain={["auto", "auto"]}
                               />
                               <Tooltip
