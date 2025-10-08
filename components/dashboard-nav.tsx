@@ -29,6 +29,10 @@ export function DashboardNav({ profile, ssoAvatarUrl }: DashboardNavProps) {
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  console.log("[v0] DashboardNav - received profile:", profile)
+  console.log("[v0] DashboardNav - received profile.avatar_url:", profile?.avatar_url)
+  console.log("[v0] DashboardNav - received ssoAvatarUrl:", ssoAvatarUrl)
+
   const handleSignOut = async () => {
     const { createClient } = await import("@/lib/supabase/client")
     const supabase = createClient()
