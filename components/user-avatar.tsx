@@ -32,7 +32,7 @@ export function UserAvatar({ profile, ssoAvatarUrl, className, fallbackText }: U
 
   return (
     <Avatar className={className}>
-      <AvatarImage src={avatarUrl || "/placeholder.svg"} alt={profile?.full_name || "User avatar"} />
+      <AvatarImage src={avatarUrl || "/placeholder.svg"} alt={profile?.full_name || "User avatar"} key={avatarUrl} />
       <AvatarFallback>{getFallbackText()}</AvatarFallback>
     </Avatar>
   )
