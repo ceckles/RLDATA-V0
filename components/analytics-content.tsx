@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -182,6 +182,74 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
       }
     })
     .filter(Boolean)
+
+  const { shotVelocityChartData, velocityChartConfig, hasVelocityData } = useMemo(() => {
+    if (selectedSessionData.length === 0) {
+      return { shotVelocityChartData: [], velocityChartConfig: {}, hasVelocityData: false }
+    }
+
+    // Get all sessions with velocity data
+    const sessionsWithVelocity = selectedSessionData
+      .map((session) => {
+        const shotData = session.shot_data || []
+        const velocityShots = shotData
+          .filter((shot) => shot.velocity !== null)
+          .sort((a, b) => a.shot_number - b.shot_number)
+
+        if (velocityShots.length === 0) return null
+
+        return {
+          sessionId: session.id,
+          sessionLabel: `${new Date(session.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${session.firearms?.name || "Unknown"}`,
+          shots: velocityShots,
+        }
+      })
+      .filter(Boolean)
+
+    if (sessionsWithVelocity.length === 0) {
+      return { shotVelocityChartData: [], velocityChartConfig: {}, hasVelocityData: false }
+    }
+
+    // Find the maximum number of shots across all sessions
+    const maxShots = Math.max(...sessionsWithVelocity.map((s) => s!.shots.length))
+
+    // Create chart data with one entry per shot number
+    const chartData = Array.from({ length: maxShots }, (_, i) => {
+      const shotNumber = i + 1
+      const dataPoint: any = { shotNumber }
+
+      sessionsWithVelocity.forEach((session) => {
+        const shot = session!.shots.find((s) => s.shot_number === shotNumber)
+        dataPoint[session!.sessionId] = shot?.velocity || null
+      })
+
+      return dataPoint
+    })
+
+    // Create chart config with colors for each session
+    const chartColors = [
+      "hsl(var(--chart-1))",
+      "hsl(var(--chart-2))",
+      "hsl(var(--chart-3))",
+      "hsl(var(--chart-4))",
+      "hsl(var(--chart-5))",
+    ]
+
+    const config: any = {}
+    sessionsWithVelocity.forEach((session, index) => {
+      config[session!.sessionId] = {
+        label: session!.sessionLabel,
+        color: chartColors[index % chartColors.length],
+      }
+    })
+
+    return {
+      shotVelocityChartData: chartData,
+      velocityChartConfig: config,
+      hasVelocityData: true,
+      sessionsWithVelocity,
+    }
+  }, [selectedSessionData])
 
   return (
     <div className="space-y-6">
@@ -508,30 +576,22 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                   </Card>
                 )}
 
-                {selectedSessions.length === 1 && shotVelocityData.length > 0 && (
+                {hasVelocityData && (
                   <Card className={comparisonData.some((d) => d.groupSize) ? "" : "md:col-span-2"}>
                     <CardHeader>
                       <CardTitle className="text-base flex items-center gap-2">
                         <Zap className="h-4 w-4" />
                         Shot-by-Shot Velocity
                       </CardTitle>
-                      <CardDescription>Individual round velocities with mean reference</CardDescription>
+                      <CardDescription>
+                        {selectedSessions.length === 1
+                          ? "Individual round velocities with mean reference"
+                          : "Compare velocity across multiple sessions"}
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ChartContainer
-                        config={{
-                          velocity: {
-                            label: "Velocity",
-                            color: "hsl(var(--chart-1))",
-                          },
-                          mean: {
-                            label: "Mean",
-                            color: "hsl(var(--muted-foreground))",
-                          },
-                        }}
-                        className="h-[250px]"
-                      >
-                        <LineChart data={shotVelocityData}>
+                      <ChartContainer config={velocityChartConfig} className="h-[300px]">
+                        <LineChart data={shotVelocityChartData}>
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                           <XAxis
                             dataKey="shotNumber"
@@ -548,82 +608,50 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                           <ChartTooltip
                             content={
                               <ChartTooltipContent
-                                formatter={(value, name, item) => {
-                                  const data = item.payload
-                                  const sessionStats = velocityStats.find((s) => s!.sessionId === data.sessionId)
+                                formatter={(value, name) => {
+                                  const config = velocityChartConfig[name]
                                   return (
-                                    <div className="flex flex-col gap-1">
-                                      <div className="font-medium">Shot #{data.shotNumber}</div>
-                                      <div className="text-sm">
-                                        Velocity: <span className="font-bold">{data.velocity} fps</span>
-                                      </div>
-                                      {sessionStats && (
-                                        <>
-                                          <div className="text-xs text-muted-foreground">
-                                            Mean: {sessionStats.mean} fps
-                                          </div>
-                                          <div className="text-xs text-muted-foreground">
-                                            Δ: {data.velocity > sessionStats.mean ? "+" : ""}
-                                            {data.velocity - sessionStats.mean} fps
-                                          </div>
-                                        </>
-                                      )}
-                                      <div className="text-xs text-muted-foreground">{data.sessionDate}</div>
+                                    <div className="flex items-center gap-2">
+                                      <div
+                                        className="h-2.5 w-2.5 rounded-full"
+                                        style={{ backgroundColor: config?.color }}
+                                      />
+                                      <span className="text-xs text-muted-foreground">{config?.label}:</span>
+                                      <span className="font-bold">{value} fps</span>
                                     </div>
                                   )
                                 }}
                               />
                             }
                           />
-                          {velocityStats[0] && (
+                          {selectedSessions.length === 1 && velocityStats[0] && (
                             <ReferenceLine
                               y={velocityStats[0].mean}
-                              stroke="var(--color-mean)"
+                              stroke="hsl(var(--muted-foreground))"
                               strokeDasharray="3 3"
-                              strokeWidth={2}
+                              strokeWidth={1.5}
                               label={{
                                 value: `Mean: ${velocityStats[0].mean} fps`,
                                 position: "right",
-                                fontSize: 11,
+                                fontSize: 10,
                                 fill: "hsl(var(--muted-foreground))",
                               }}
                             />
                           )}
-                          <Line
-                            type="monotone"
-                            dataKey="velocity"
-                            stroke="var(--color-velocity)"
-                            strokeWidth={3}
-                            dot={{
-                              r: 5,
-                              fill: "var(--color-velocity)",
-                              strokeWidth: 2,
-                              stroke: "hsl(var(--background))",
-                            }}
-                            activeDot={{ r: 7, strokeWidth: 2 }}
-                          />
+                          {Object.keys(velocityChartConfig).map((sessionId) => (
+                            <Line
+                              key={sessionId}
+                              type="monotone"
+                              dataKey={sessionId}
+                              stroke={velocityChartConfig[sessionId].color}
+                              strokeWidth={2}
+                              dot={{ r: 4, strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                              activeDot={{ r: 6, strokeWidth: 2 }}
+                              connectNulls={false}
+                            />
+                          ))}
                         </LineChart>
                       </ChartContainer>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {selectedSessions.length > 1 && (
-                  <Card className={comparisonData.some((d) => d.groupSize) ? "" : "md:col-span-2"}>
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        Shot-by-Shot Velocity
-                      </CardTitle>
-                      <CardDescription>Individual round velocities with mean reference</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-center h-[250px] text-muted-foreground">
-                        <div className="text-center space-y-2">
-                          <p className="text-sm">Select a single session to view shot-by-shot velocity data</p>
-                          <p className="text-xs">Velocity statistics are shown in the cards above</p>
-                        </div>
-                      </div>
                     </CardContent>
                   </Card>
                 )}
