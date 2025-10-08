@@ -597,6 +597,8 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                                 stroke="#888888"
                                 tick={{ fill: "#888888" }}
                                 fontSize={12}
+                                interval="preserveStartEnd"
+                                tickCount={6}
                                 label={{
                                   value: "Shot Number",
                                   position: "insideBottom",
