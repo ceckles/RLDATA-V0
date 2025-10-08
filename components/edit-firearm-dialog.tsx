@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -20,6 +19,7 @@ import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
+import { Upload, X } from "lucide-react"
 
 interface EditFirearmDialogProps {
   firearm: Firearm
@@ -29,6 +29,9 @@ interface EditFirearmDialogProps {
 
 export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDialogProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(firearm.image_url || null)
+  const [removeExistingImage, setRemoveExistingImage] = useState(false)
   const router = useRouter()
 
   const [formData, setFormData] = useState({
@@ -44,6 +47,37 @@ export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDi
     notes: firearm.notes || "",
   })
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const validTypes = ["image/jpeg", "image/png", "image/webp"]
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload a JPG, PNG, or WebP image")
+      return
+    }
+
+    const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+    if (file.size > maxSize) {
+      toast.error("Image must be less than 5MB")
+      return
+    }
+
+    setImageFile(file)
+    setRemoveExistingImage(false)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+    setRemoveExistingImage(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -51,6 +85,37 @@ export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDi
 
     try {
       const firearmName = formData.name || `${formData.manufacturer} ${formData.model}`.trim()
+
+      let imageUrl = firearm.image_url
+
+      if ((removeExistingImage || imageFile) && firearm.image_url) {
+        const oldPath = firearm.image_url.split("/firearm-images/")[1]
+        if (oldPath) {
+          await supabase.storage.from("firearm-images").remove([oldPath])
+        }
+      }
+
+      if (imageFile) {
+        const fileExt = imageFile.name.split(".").pop()
+        const fileName = `${firearm.user_id}/${Date.now()}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage.from("firearm-images").upload(fileName, imageFile, {
+          cacheControl: "3600",
+          upsert: false,
+        })
+
+        if (uploadError) {
+          throw new Error(`Failed to upload image: ${uploadError.message}`)
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("firearm-images").getPublicUrl(fileName)
+
+        imageUrl = publicUrl
+      } else if (removeExistingImage) {
+        imageUrl = null
+      }
 
       const { error } = await supabase
         .from("firearms")
@@ -65,6 +130,7 @@ export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDi
           twist_rate: formData.twist_rate || null,
           purchase_date: formData.purchase_date || null,
           notes: formData.notes || null,
+          image_url: imageUrl,
         })
         .eq("id", firearm.id)
 
@@ -199,6 +265,43 @@ export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDi
               <p className="text-xs text-muted-foreground">
                 Round count is automatically tracked through shooting sessions
               </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="image">Firearm Image</Label>
+              {imagePreview ? (
+                <div className="relative">
+                  <img
+                    src={imagePreview || "/placeholder.svg"}
+                    alt="Firearm preview"
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={handleRemoveImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
+                  <input
+                    id="image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <label htmlFor="image" className="cursor-pointer">
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <p className="mt-2 text-sm text-muted-foreground">Click to upload firearm image</p>
+                    <p className="text-xs text-muted-foreground mt-1">JPG, PNG, or WebP (max 5MB)</p>
+                  </label>
+                </div>
+              )}
             </div>
 
             <div className="grid gap-2">

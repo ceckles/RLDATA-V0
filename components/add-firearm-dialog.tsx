@@ -21,7 +21,7 @@ import { UpgradeDialog } from "@/components/upgrade-dialog"
 import type { FirearmType, SubscriptionTier } from "@/lib/types"
 import { canAddItem } from "@/lib/tier-limits"
 import { createClient } from "@/lib/supabase/client"
-import { Plus } from "lucide-react"
+import { Plus, Upload, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -36,6 +36,8 @@ export function AddFirearmDialog({ userId, tier, currentCount }: AddFirearmDialo
   const [open, setOpen] = useState(false)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const router = useRouter()
 
   const [formData, setFormData] = useState({
@@ -68,6 +70,27 @@ export function AddFirearmDialog({ userId, tier, currentCount }: AddFirearmDialo
     try {
       const firearmName = formData.name || `${formData.manufacturer} ${formData.model}`.trim()
 
+      let imageUrl = null
+      if (imageFile) {
+        const fileExt = imageFile.name.split(".").pop()
+        const fileName = `${userId}/${Date.now()}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage.from("firearm-images").upload(fileName, imageFile, {
+          cacheControl: "3600",
+          upsert: false,
+        })
+
+        if (uploadError) {
+          throw new Error(`Failed to upload image: ${uploadError.message}`)
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("firearm-images").getPublicUrl(fileName)
+
+        imageUrl = publicUrl
+      }
+
       const insertData = {
         user_id: userId,
         name: firearmName,
@@ -81,6 +104,7 @@ export function AddFirearmDialog({ userId, tier, currentCount }: AddFirearmDialo
         round_count: formData.round_count ? Number.parseInt(formData.round_count) : 0,
         purchase_date: formData.purchase_date || null,
         notes: formData.notes || null,
+        image_url: imageUrl,
       }
 
       const { error } = await supabase.from("firearms").insert(insertData)
@@ -105,13 +129,44 @@ export function AddFirearmDialog({ userId, tier, currentCount }: AddFirearmDialo
         purchase_date: "",
         notes: "",
       })
+      setImageFile(null)
+      setImagePreview(null)
       router.refresh()
     } catch (error) {
-      console.error("[v0] Error adding firearm:", error)
+      console.error("Error adding firearm:", error)
       toast.error("Failed to add firearm. Please try again.")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const validTypes = ["image/jpeg", "image/png", "image/webp"]
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload a JPG, PNG, or WebP image")
+      return
+    }
+
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      toast.error("Image must be less than 5MB")
+      return
+    }
+
+    setImageFile(file)
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
   }
 
   return (
@@ -264,6 +319,43 @@ export function AddFirearmDialog({ userId, tier, currentCount }: AddFirearmDialo
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Additional notes about this firearm..."
                 />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="image">Firearm Image</Label>
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview || "/placeholder.svg"}
+                      alt="Firearm preview"
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2"
+                      onClick={handleRemoveImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary transition-colors">
+                    <input
+                      id="image"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleImageChange}
+                      className="hidden"
+                    />
+                    <label htmlFor="image" className="cursor-pointer">
+                      <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
+                      <p className="mt-2 text-sm text-muted-foreground">Click to upload firearm image</p>
+                      <p className="text-xs text-muted-foreground mt-1">JPG, PNG, or WebP (max 5MB)</p>
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
