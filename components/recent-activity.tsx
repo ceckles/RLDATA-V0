@@ -99,6 +99,9 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                 <div key={activity.id}>{content}</div>
               )
             })}
+            <Link href="/dashboard/activity" className="block text-sm text-primary hover:underline text-center pt-2">
+              View all activity →
+            </Link>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

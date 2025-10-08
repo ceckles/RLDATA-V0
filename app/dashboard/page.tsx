@@ -231,7 +231,7 @@ export default async function DashboardPage() {
     })) || []),
   ]
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 10)
+    .slice(0, 5)
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6 space-y-6">
