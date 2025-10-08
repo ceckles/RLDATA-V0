@@ -231,3 +231,15 @@ export interface Log {
   path: string | null
   created_at: string
 }
+
+export type UserRole = "user" | "moderator" | "admin"
+
+export interface FeatureFlag {
+  id: string
+  feature_key: string
+  feature_name: string
+  description: string | null
+  is_enabled: boolean
+  created_at: string
+  updated_at: string
+}
