@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SubscriptionBadge } from "@/components/subscription-badge"
 import { UpgradeCard } from "@/components/upgrade-card"
 import { ManageSubscriptionButton } from "@/components/manage-subscription-button"
+import { AccountSettings } from "@/components/account-settings"
 import { Settings } from "lucide-react"
 
 export default async function SettingsPage() {
@@ -16,6 +17,8 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
 
+  if (!profile) return null
+
   return (
     <div className="container mx-auto max-w-7xl py-6 px-4 space-y-6">
       <div>
@@ -27,52 +30,39 @@ export default async function SettingsPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
+        <AccountSettings profile={profile} />
+
         <Card>
           <CardHeader>
-            <CardTitle>Account Information</CardTitle>
-            <CardDescription>Your profile details</CardDescription>
+            <CardTitle>Subscription</CardTitle>
+            <CardDescription>Your current plan and billing</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <p className="text-sm text-muted-foreground">Name</p>
-              <p className="font-medium">{profile?.full_name || "Not set"}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Email</p>
-              <p className="font-medium">{profile?.email}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Subscription</p>
+              <p className="text-sm text-muted-foreground">Current Plan</p>
               <div className="mt-1">
                 <SubscriptionBadge tier={profile?.subscription_tier || "basic"} />
               </div>
             </div>
+            {profile?.subscription_tier === "premium" && (
+              <>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <p className="font-medium capitalize">{profile.subscription_status || "Active"}</p>
+                </div>
+                {profile.subscription_ends_at && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Renews</p>
+                    <p className="font-medium">{new Date(profile.subscription_ends_at).toLocaleDateString()}</p>
+                  </div>
+                )}
+                <ManageSubscriptionButton />
+              </>
+            )}
           </CardContent>
         </Card>
 
         {(!profile?.subscription_tier || profile?.subscription_tier === "basic") && <UpgradeCard />}
-
-        {profile?.subscription_tier === "premium" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Premium Subscription</CardTitle>
-              <CardDescription>Manage your subscription</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Status</p>
-                <p className="font-medium capitalize">{profile.subscription_status || "Active"}</p>
-              </div>
-              {profile.subscription_ends_at && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Renews</p>
-                  <p className="font-medium">{new Date(profile.subscription_ends_at).toLocaleDateString()}</p>
-                </div>
-              )}
-              <ManageSubscriptionButton />
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   )
