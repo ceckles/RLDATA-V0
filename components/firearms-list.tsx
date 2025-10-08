@@ -121,7 +121,10 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
                 className={`overflow-hidden ${maintenanceStatus?.status === "overdue" ? "border-red-500" : ""}`}
               >
                 {firearm.image_url && (
-                  <div className="h-48 bg-cover bg-top" style={{ backgroundImage: `url(${firearm.image_url})` }}>
+                  <div
+                    className="h-48 bg-cover bg-top relative"
+                    style={{ backgroundImage: `url(${firearm.image_url})` }}
+                  >
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
                   </div>
                 )}
