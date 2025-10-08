@@ -10,19 +10,61 @@ function verifySignature(payload: string, signature: string): boolean {
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))
 }
 
+async function logWebhookEvent(
+  supabase: any,
+  eventName: string,
+  eventType: string,
+  payload: any,
+  status: "success" | "failed" | "pending",
+  userId: string | null,
+  errorMessage: string | null = null,
+  processingTimeMs: number | null = null,
+) {
+  try {
+    await supabase.from("webhook_logs").insert({
+      event_name: eventName,
+      event_type: eventType,
+      payload,
+      status,
+      error_message: errorMessage,
+      processing_time_ms: processingTimeMs,
+      user_id: userId,
+    })
+  } catch (error) {
+    console.error("Failed to log webhook event:", error)
+  }
+}
+
 export async function POST(request: Request) {
+  const startTime = Date.now()
+  let eventName = "unknown"
+  let userId: string | null = null
+
   try {
     const payload = await request.text()
     const signature = request.headers.get("x-signature")
     const event = JSON.parse(payload)
     const supabase = createAdminClient()
 
-    const eventName = event.meta?.event_name
+    eventName = event.meta?.event_name || "unknown"
     const customData = event.meta?.custom_data
-    const userId = customData?.user_id
+    userId = customData?.user_id || null
+
+    await logWebhookEvent(supabase, eventName, "lemon_squeezy", event, "pending", userId)
 
     if (!userId) {
       console.error("No user_id in webhook payload")
+      const processingTime = Date.now() - startTime
+      await logWebhookEvent(
+        supabase,
+        eventName,
+        "lemon_squeezy",
+        event,
+        "failed",
+        null,
+        "No user_id in custom_data",
+        processingTime,
+      )
       return NextResponse.json({ error: "No user_id in custom_data" }, { status: 400 })
     }
 
@@ -40,7 +82,7 @@ export async function POST(request: Request) {
               subscription_status: subscription?.status || "active",
               lemon_squeezy_customer_id: subscription?.customer_id?.toString() || null,
               lemon_squeezy_subscription_id: event.data.id || null,
-              lemon_squeezy_order_id: subscription?.order_id?.toString() || null, // Added lemon_squeezy_order_id from subscription.order_id
+              lemon_squeezy_order_id: subscription?.order_id?.toString() || null,
               subscription_ends_at: subscription?.ends_at || null,
             })
             .eq("id", userId)
@@ -48,6 +90,17 @@ export async function POST(request: Request) {
 
           if (error) {
             console.error("Failed to update profile:", error)
+            const processingTime = Date.now() - startTime
+            await logWebhookEvent(
+              supabase,
+              eventName,
+              "lemon_squeezy",
+              event,
+              "failed",
+              userId,
+              `Failed to update profile: ${error.message}`,
+              processingTime,
+            )
             return NextResponse.json({ error: "Failed to update profile", details: error.message }, { status: 500 })
           }
 
@@ -67,7 +120,6 @@ export async function POST(request: Request) {
       case "subscription_expired": {
         const subscription = event.data.attributes
         if (userId) {
-          // Update profile
           await supabase
             .from("profiles")
             .update({
@@ -88,7 +140,6 @@ export async function POST(request: Request) {
       case "subscription_resumed": {
         const subscription = event.data.attributes
         if (userId) {
-          // Update profile
           await supabase
             .from("profiles")
             .update({
@@ -127,8 +178,6 @@ export async function POST(request: Request) {
 
       case "subscription_payment_failed": {
         if (userId) {
-          // Log the payment failure but don't immediately remove role
-          // Give grace period for payment retry
           console.log(`Payment failed for user ${userId}`)
         }
         break
@@ -136,10 +185,9 @@ export async function POST(request: Request) {
 
       case "order_created": {
         const order = event.data.attributes
-        const orderType = customData?.order_type // 'donation' or 'subscription'
+        const orderType = customData?.order_type
 
         if (userId && orderType === "donation") {
-          // Update profile with order ID
           await supabase
             .from("profiles")
             .update({
@@ -147,11 +195,9 @@ export async function POST(request: Request) {
             })
             .eq("id", userId)
 
-          // Assign donator role
           const hasDonatorRole = await userHasRole(userId, "donator")
           if (!hasDonatorRole) {
             await assignRole(userId, "donator", userId, {
-              lemonSqueezyOrderId: event.data.id,
               notes: `Donation of ${order.total_formatted || "unknown amount"}`,
             })
           }
@@ -163,7 +209,6 @@ export async function POST(request: Request) {
         const orderType = customData?.order_type
 
         if (userId && orderType === "donation") {
-          // Remove donator role if refunded
           const hasDonatorRole = await userHasRole(userId, "donator")
           if (hasDonatorRole) {
             await removeRole(userId, "donator", userId, "Donation refunded")
@@ -176,9 +221,17 @@ export async function POST(request: Request) {
         console.log(`Unhandled event: ${eventName}`)
     }
 
+    const processingTime = Date.now() - startTime
+    await logWebhookEvent(supabase, eventName, "lemon_squeezy", event, "success", userId, null, processingTime)
+
     return NextResponse.json({ received: true, event: eventName, userId })
   } catch (error) {
     console.error("Webhook error:", error)
+
+    const processingTime = Date.now() - startTime
+    const supabase = createAdminClient()
+    await logWebhookEvent(supabase, eventName, "lemon_squeezy", {}, "failed", userId, String(error), processingTime)
+
     return NextResponse.json({ error: "Webhook handler failed", details: String(error) }, { status: 500 })
   }
 }

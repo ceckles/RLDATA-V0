@@ -250,7 +250,6 @@ export interface UserRoleAssignment {
   assigned_at: string
   assigned_by: string | null
   expires_at: string | null
-  lemon_squeezy_order_id: string | null
   notes: string | null
 }
 
@@ -269,5 +268,17 @@ export interface RoleAuditLog {
   performed_by: string | null
   reason: string | null
   metadata: Record<string, any> | null
+  created_at: string
+}
+
+export interface WebhookLog {
+  id: string
+  event_name: string
+  event_type: string
+  payload: Record<string, any>
+  status: "success" | "failed" | "pending"
+  error_message: string | null
+  processing_time_ms: number | null
+  user_id: string | null
   created_at: string
 }
