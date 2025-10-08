@@ -9,13 +9,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { SubscriptionBadge } from "@/components/subscription-badge"
 import ThemeToggle from "@/components/theme-toggle"
 import type { Profile } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
-import { BarChart3, Box, LogOut, Settings, Target, User, Wrench, Crosshair, Crown } from "lucide-react"
+import { BarChart3, Box, LogOut, Settings, Target, User, Wrench, Crosshair, Crown, Menu } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useState } from "react"
 
 interface DashboardNavProps {
   profile: Profile | null
@@ -24,6 +26,7 @@ interface DashboardNavProps {
 export function DashboardNav({ profile }: DashboardNavProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -54,11 +57,43 @@ export function DashboardNav({ profile }: DashboardNavProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto max-w-7xl px-4 flex h-14 items-center">
-        <div className="mr-4 flex">
-          <Link href="/dashboard" className="mr-6 flex items-center space-x-2">
+        <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <SheetTrigger asChild className="md:hidden mr-2">
+            <Button variant="ghost" size="icon">
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-64">
+            <SheetHeader>
+              <SheetTitle>Menu</SheetTitle>
+            </SheetHeader>
+            <nav className="flex flex-col space-y-4 mt-6">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-accent ${
+                      pathname === item.href ? "bg-accent text-foreground" : "text-foreground/60"
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                )
+              })}
+            </nav>
+          </SheetContent>
+        </Sheet>
+
+        <div className="flex items-center flex-1">
+          <Link href="/dashboard" className="flex items-center space-x-2 mr-6">
             <span className="font-bold">ReloadData</span>
           </Link>
-          <nav className="flex items-center space-x-6 text-sm font-medium">
+          <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 text-sm font-medium">
             {navItems.map((item) => {
               const Icon = item.icon
               return (
@@ -70,22 +105,24 @@ export function DashboardNav({ profile }: DashboardNavProps) {
                   }`}
                 >
                   <Icon className="h-4 w-4" />
-                  {item.label}
+                  <span className="hidden lg:inline">{item.label}</span>
                 </Link>
               )
             })}
           </nav>
         </div>
-        <div className="ml-auto flex items-center space-x-4">
+
+        <div className="flex items-center space-x-2 md:space-x-4">
           {profile && (!profile.subscription_tier || profile.subscription_tier === "basic") && (
-            <Link href="/dashboard/settings">
+            <Link href="/dashboard/settings" className="hidden sm:block">
               <Button size="sm" variant="default" className="gap-2">
                 <Crown className="h-4 w-4" />
-                Upgrade to Premium
+                <span className="hidden lg:inline">Upgrade to Premium</span>
+                <span className="lg:hidden">Upgrade</span>
               </Button>
             </Link>
           )}
-          {profile && <SubscriptionBadge tier={profile.subscription_tier} />}
+          {profile && <SubscriptionBadge tier={profile.subscription_tier} className="hidden sm:flex" />}
           <ThemeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
