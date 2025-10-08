@@ -116,13 +116,16 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
             const firearmSchedules = maintenanceSchedules.filter((s) => s.firearm_id === firearm.id)
 
             return (
-              <Card key={firearm.id} className={maintenanceStatus?.status === "overdue" ? "border-red-500" : ""}>
+              <Card
+                key={firearm.id}
+                className={`overflow-hidden ${maintenanceStatus?.status === "overdue" ? "border-red-500" : ""}`}
+              >
                 {firearm.image_url && (
                   <div
-                    className="h-48 bg-cover bg-top rounded-t-lg relative"
+                    className="h-48 bg-cover bg-top relative -mt-[1px]"
                     style={{ backgroundImage: `url(${firearm.image_url})` }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background rounded-t-lg" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
                   </div>
                 )}
                 <CardHeader>
