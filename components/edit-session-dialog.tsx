@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea"
 import type { ShootingSession } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 interface EditSessionDialogProps {
   session: ShootingSession
@@ -41,6 +41,23 @@ export function EditSessionDialog({ session, open, onOpenChange }: EditSessionDi
     group_size: session.group_size?.toString() || "",
     notes: session.notes || "",
   })
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        session_date: session.session_date,
+        rounds_fired: session.rounds_fired.toString(),
+        distance: session.distance?.toString() || "",
+        temperature: session.temperature?.toString() || "",
+        humidity: session.humidity?.toString() || "",
+        wind_speed: session.wind_speed?.toString() || "",
+        load_recipe: session.load_recipe || "",
+        powder_charge: session.powder_charge?.toString() || "",
+        group_size: session.group_size?.toString() || "",
+        notes: session.notes || "",
+      })
+    }
+  }, [session, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

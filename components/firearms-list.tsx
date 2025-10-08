@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import type { Firearm, MaintenanceSchedule } from "@/lib/types"
+import type { Firearm, MaintenanceSchedule, MaintenanceHistory } from "@/lib/types"
 import { Edit, Trash2, AlertTriangle } from "lucide-react"
 import { useState } from "react"
 import { EditFirearmDialog } from "./edit-firearm-dialog"
@@ -14,9 +14,10 @@ import { MaintenanceScheduleDialog } from "./maintenance-schedule-dialog"
 interface FirearmsListProps {
   firearms: Firearm[]
   maintenanceSchedules: MaintenanceSchedule[]
+  maintenanceHistory: MaintenanceHistory[]
 }
 
-export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListProps) {
+export function FirearmsList({ firearms, maintenanceSchedules, maintenanceHistory }: FirearmsListProps) {
   const [editingFirearm, setEditingFirearm] = useState<Firearm | null>(null)
   const [deletingFirearm, setDeletingFirearm] = useState<Firearm | null>(null)
 
@@ -114,6 +115,7 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
           {firearms.map((firearm) => {
             const maintenanceStatus = getFirearmMaintenanceStatus(firearm)
             const firearmSchedules = maintenanceSchedules.filter((s) => s.firearm_id === firearm.id)
+            const firearmHistory = maintenanceHistory.filter((h) => h.firearm_id === firearm.id)
 
             return (
               <Card
@@ -213,7 +215,11 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
                     </div>
                   )}
                   <div className="flex flex-col gap-2 pt-2">
-                    <MaintenanceScheduleDialog firearm={firearm} schedules={firearmSchedules} />
+                    <MaintenanceScheduleDialog
+                      firearm={firearm}
+                      schedules={firearmSchedules}
+                      history={firearmHistory}
+                    />
                     <div className="flex gap-2">
                       <Button
                         variant="outline"

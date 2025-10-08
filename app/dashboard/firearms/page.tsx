@@ -30,6 +30,12 @@ export default async function FirearmsPage() {
     .eq("is_active", true)
     .order("created_at", { ascending: false })
 
+  const { data: maintenanceHistory } = await supabase
+    .from("maintenance_history")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("completed_at", { ascending: false })
+
   const limits = getTierLimits(profile?.subscription_tier || "basic")
 
   return (
@@ -62,7 +68,11 @@ export default async function FirearmsPage() {
         />
       </div>
 
-      <FirearmsList firearms={firearms || []} maintenanceSchedules={maintenanceSchedules || []} />
+      <FirearmsList
+        firearms={firearms || []}
+        maintenanceSchedules={maintenanceSchedules || []}
+        maintenanceHistory={maintenanceHistory || []}
+      />
     </div>
   )
 }

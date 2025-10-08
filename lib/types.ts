@@ -141,6 +141,19 @@ export interface MaintenanceSchedule {
   updated_at: string
 }
 
+export interface MaintenanceHistory {
+  id: string
+  firearm_id: string
+  user_id: string
+  schedule_id: string | null
+  name: string
+  type: MaintenanceType | "lubrication" | "parts_replacement"
+  completed_at: string
+  round_count_at_completion: number | null
+  notes: string | null
+  created_at: string
+}
+
 export interface ReloadingSession {
   id: string
   user_id: string
