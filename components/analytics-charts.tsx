@@ -9,6 +9,12 @@ interface AnalyticsChartsProps {
   sessions: (ShootingSession & { firearms: { manufacturer: string; model: string } | null })[]
 }
 
+const CHART_COLORS = {
+  primary: "#ea580c", // Orange color matching the site theme
+  secondary: "#3b82f6", // Blue
+  accent: "#10b981", // Green
+}
+
 export function AnalyticsCharts({ sessions }: AnalyticsChartsProps) {
   // Group size trend data
   const groupSizeData = sessions
@@ -89,7 +95,13 @@ export function AnalyticsCharts({ sessions }: AnalyticsChartsProps) {
                     return null
                   }}
                 />
-                <Line type="monotone" dataKey="groupSize" stroke="hsl(var(--primary))" strokeWidth={2} />
+                <Line
+                  type="monotone"
+                  dataKey="groupSize"
+                  stroke={CHART_COLORS.primary}
+                  strokeWidth={3}
+                  dot={{ r: 4, fill: CHART_COLORS.primary, strokeWidth: 2, stroke: "#fff" }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -124,7 +136,7 @@ export function AnalyticsCharts({ sessions }: AnalyticsChartsProps) {
                     return null
                   }}
                 />
-                <Bar dataKey="rounds" fill="hsl(var(--primary))" />
+                <Bar dataKey="rounds" fill={CHART_COLORS.primary} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -159,7 +171,7 @@ export function AnalyticsCharts({ sessions }: AnalyticsChartsProps) {
                     return null
                   }}
                 />
-                <Bar dataKey="sessions" fill="hsl(var(--primary))" />
+                <Bar dataKey="sessions" fill={CHART_COLORS.secondary} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
