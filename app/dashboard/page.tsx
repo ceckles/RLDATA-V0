@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AnalyticsCharts } from "@/components/analytics-charts"
-import { RecentSessions } from "@/components/recent-sessions"
+import { RecentActivity } from "@/components/recent-activity"
 import { Box, Target, TrendingUp, Wrench, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { TIER_LIMITS } from "@/lib/tier-limits"
@@ -74,6 +74,7 @@ export default async function DashboardPage() {
     { data: sessions },
     { data: components },
     { data: firearms },
+    { data: recentLogs },
   ] = await Promise.all([
     supabase.from("components").select("*", { count: "exact", head: true }).eq("user_id", user.id),
     supabase.from("firearms").select("*", { count: "exact", head: true }).eq("user_id", user.id),
@@ -86,6 +87,12 @@ export default async function DashboardPage() {
       .limit(10),
     supabase.from("components").select("*").eq("user_id", user.id),
     supabase.from("firearms").select("*, maintenance_schedules(*)").eq("user_id", user.id),
+    supabase
+      .from("logs")
+      .select("id, level, category, message, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(10),
   ])
 
   const firearmsWithMaintenance =
@@ -154,7 +161,7 @@ export default async function DashboardPage() {
       value: sessionsCount || 0,
       description: isBasic ? `${sessionsCount || 0}/${TIER_LIMITS[tier].sessions} logged` : "Shooting sessions logged",
       icon: Wrench,
-      href: "/dashboard/sessions",
+      href: "/dashboard/shooting",
       showLimit: isBasic,
       limit: TIER_LIMITS[tier].sessions,
     },
@@ -163,7 +170,7 @@ export default async function DashboardPage() {
       value: totalRounds.toLocaleString(),
       description: "Rounds fired across all sessions",
       icon: TrendingUp,
-      href: "/dashboard/sessions",
+      href: "/dashboard/shooting",
       showLimit: false,
     },
   ]
@@ -302,7 +309,7 @@ export default async function DashboardPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <RecentSessions sessions={sessions || []} />
+        <RecentActivity activities={recentLogs || []} />
 
         <Card>
           <CardHeader>
@@ -373,7 +380,7 @@ export default async function DashboardPage() {
               </CardHeader>
             </Card>
           </Link>
-          <Link href="/dashboard/sessions">
+          <Link href="/dashboard/shooting">
             <Card className="hover:bg-accent/50 transition-colors cursor-pointer">
               <CardHeader>
                 <CardTitle className="text-base">Log Session</CardTitle>
