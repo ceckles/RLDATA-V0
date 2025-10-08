@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -50,6 +50,20 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
   const [selectedSessions, setSelectedSessions] = useState<string[]>([])
   const [filterFirearm, setFilterFirearm] = useState<string>("all")
   const [sortBy, setSortBy] = useState<"date" | "groupSize" | "rounds">("date")
+
+  useEffect(() => {
+    console.log("[v0] AnalyticsContent mounted")
+    console.log("[v0] Sessions count:", sessions?.length || 0)
+    console.log("[v0] Profile tier:", profile?.subscription_tier)
+
+    return () => {
+      console.log("[v0] AnalyticsContent unmounting")
+    }
+  }, [])
+
+  useEffect(() => {
+    console.log("[v0] Selected sessions changed:", selectedSessions.length)
+  }, [selectedSessions])
 
   const isPremium = profile?.subscription_tier === "premium"
 
