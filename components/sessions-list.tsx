@@ -18,8 +18,6 @@ export function SessionsList({ sessions, firearms, ammunitionBatches }: Sessions
   const [deletingSession, setDeletingSession] = useState<any | null>(null)
   const [editingSession, setEditingSession] = useState<any | null>(null)
 
-  console.log("[v0] SessionsList received sessions:", sessions)
-
   if (sessions.length === 0) {
     return (
       <Card>

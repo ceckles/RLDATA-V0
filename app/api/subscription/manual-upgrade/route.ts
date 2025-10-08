@@ -5,7 +5,6 @@ export async function POST() {
   try {
     const supabase = await createClient()
 
-    // Get current user
     const {
       data: { user },
       error: authError,
@@ -15,9 +14,6 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    console.log("[v0] Manual upgrade - User ID:", user.id)
-
-    // Update profile to premium
     const { error: updateError } = await supabase
       .from("profiles")
       .update({
@@ -28,18 +24,16 @@ export async function POST() {
       .eq("id", user.id)
 
     if (updateError) {
-      console.error("[v0] Manual upgrade - Update error:", updateError)
+      console.error("Manual upgrade - Update error:", updateError)
       return NextResponse.json({ error: "Failed to upgrade profile" }, { status: 500 })
     }
-
-    console.log("[v0] Manual upgrade - Success!")
 
     return NextResponse.json({
       success: true,
       message: "Profile upgraded to premium",
     })
   } catch (error) {
-    console.error("[v0] Manual upgrade - Error:", error)
+    console.error("Manual upgrade - Error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

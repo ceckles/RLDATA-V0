@@ -55,8 +55,6 @@ export function AddSessionDialog({ userId, tier, currentCount, firearms, ammunit
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
-  console.log("[v0] AddSessionDialog received ammunitionBatches:", ammunitionBatches)
-
   const [formData, setFormData] = useState({
     firearm_id: "",
     ammunition_batch_id: "",
@@ -167,40 +165,26 @@ export function AddSessionDialog({ userId, tier, currentCount, firearms, ammunit
       }
 
       if (formData.ammunition_batch_id && formData.rounds_fired) {
-        console.log("[v0] Attempting to decrement ammunition:", {
-          batch_id: formData.ammunition_batch_id,
-          amount: Number.parseInt(formData.rounds_fired),
-        })
-
         const { data: decrementData, error: updateError } = await supabase.rpc("decrement_ammunition_quantity", {
           batch_id: formData.ammunition_batch_id,
           amount: Number.parseInt(formData.rounds_fired),
         })
 
         if (updateError) {
-          console.error("[v0] Error updating ammunition quantity:", updateError)
+          console.error("Error updating ammunition quantity:", updateError)
           alert(`Warning: Session logged but ammunition quantity was not updated. Error: ${updateError.message}`)
-        } else {
-          console.log("[v0] Successfully decremented ammunition quantity")
         }
       }
 
       if (formData.firearm_id && formData.rounds_fired) {
-        console.log("[v0] Attempting to increment firearm round count:", {
-          firearm_id: formData.firearm_id,
-          amount: Number.parseInt(formData.rounds_fired),
-        })
-
         const { error: firearmUpdateError } = await supabase.rpc("increment_firearm_round_count", {
           firearm_uuid: formData.firearm_id,
           amount: Number.parseInt(formData.rounds_fired),
         })
 
         if (firearmUpdateError) {
-          console.error("[v0] Error updating firearm round count:", firearmUpdateError)
+          console.error("Error updating firearm round count:", firearmUpdateError)
           alert(`Warning: Session logged but firearm round count was not updated. Error: ${firearmUpdateError.message}`)
-        } else {
-          console.log("[v0] Successfully incremented firearm round count")
         }
       }
 

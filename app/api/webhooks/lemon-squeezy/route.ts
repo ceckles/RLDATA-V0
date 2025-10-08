@@ -11,20 +11,8 @@ function verifySignature(payload: string, signature: string): boolean {
 
 export async function POST(request: Request) {
   try {
-    console.log("[v0] Webhook received: POST /api/webhooks/lemon-squeezy")
     const payload = await request.text()
-
-    await fetch(`${request.headers.get("origin")}/api/debug/last-webhook`, {
-      method: "POST",
-      body: payload,
-    }).catch(() => {})
-
-    console.log("[v0] Webhook payload length:", payload.length)
-
     const signature = request.headers.get("x-signature")
-
-    console.log("[v0] Webhook signature present:", !!signature)
-
     const event = JSON.parse(payload)
     const supabase = createAdminClient()
 
@@ -32,13 +20,8 @@ export async function POST(request: Request) {
     const customData = event.meta?.custom_data
     const userId = customData?.user_id
 
-    console.log("[v0] Webhook event:", eventName)
-    console.log("[v0] Webhook custom_data:", JSON.stringify(customData))
-    console.log("[v0] Webhook user_id:", userId)
-    console.log("[v0] Full event meta:", JSON.stringify(event.meta))
-
     if (!userId) {
-      console.error("[v0] No user_id in webhook payload")
+      console.error("No user_id in webhook payload")
       return NextResponse.json({ error: "No user_id in custom_data" }, { status: 400 })
     }
 
@@ -46,10 +29,8 @@ export async function POST(request: Request) {
       case "subscription_created":
       case "subscription_updated": {
         const subscription = event.data.attributes
-        console.log("[v0] Subscription data:", JSON.stringify(subscription))
 
         if (userId) {
-          console.log("[v0] Updating profile to premium for user:", userId)
           const { data, error } = await supabase
             .from("profiles")
             .update({
@@ -63,13 +44,11 @@ export async function POST(request: Request) {
             .select()
 
           if (error) {
-            console.error("[v0] Failed to update profile:", error)
+            console.error("Failed to update profile:", error)
             return NextResponse.json({ error: "Failed to update profile", details: error.message }, { status: 500 })
-          } else {
-            console.log("[v0] Profile updated successfully:", data)
           }
         } else {
-          console.error("[v0] Cannot update profile - no user_id")
+          console.error("Cannot update profile - no user_id")
         }
         break
       }
@@ -77,7 +56,6 @@ export async function POST(request: Request) {
       case "subscription_cancelled":
       case "subscription_expired": {
         const subscription = event.data.attributes
-        console.log("[v0] Downgrading profile to basic for user:", userId)
         if (userId) {
           await supabase
             .from("profiles")
@@ -93,7 +71,6 @@ export async function POST(request: Request) {
 
       case "subscription_resumed": {
         const subscription = event.data.attributes
-        console.log("[v0] Resuming premium for user:", userId)
         if (userId) {
           await supabase
             .from("profiles")
@@ -108,7 +85,6 @@ export async function POST(request: Request) {
       }
 
       case "subscription_paused": {
-        console.log("[v0] Pausing subscription for user:", userId)
         if (userId) {
           await supabase
             .from("profiles")
@@ -121,12 +97,12 @@ export async function POST(request: Request) {
       }
 
       default:
-        console.log(`[v0] Unhandled event: ${eventName}`)
+        console.log(`Unhandled event: ${eventName}`)
     }
 
     return NextResponse.json({ received: true, event: eventName, userId })
   } catch (error) {
-    console.error("[v0] Webhook error:", error)
+    console.error("Webhook error:", error)
     return NextResponse.json({ error: "Webhook handler failed", details: String(error) }, { status: 500 })
   }
 }
