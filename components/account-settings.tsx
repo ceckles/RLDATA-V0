@@ -56,12 +56,23 @@ export function AccountSettings({ profile, ssoAvatarUrl }: AccountSettingsProps)
     setPreviewUrl(URL.createObjectURL(file))
   }
 
-  const handleRemoveImage = () => {
+  const handleRemoveImage = async () => {
     setAvatarFile(null)
     setPreviewUrl(null)
-    if (avatarUrl) {
-      setAvatarUrl("")
+
+    // Delete from storage if there's an existing uploaded avatar
+    if (avatarUrl && avatarUrl.includes("avatars")) {
+      try {
+        const urlParts = avatarUrl.split("/")
+        const fileName = urlParts[urlParts.length - 1]
+        const filePath = `${profile.id}/${fileName}`
+        await supabase.storage.from("avatars").remove([filePath])
+      } catch (err) {
+        console.error("Failed to delete old avatar:", err)
+      }
     }
+
+    setAvatarUrl("")
   }
 
   const handleSave = async () => {
@@ -75,11 +86,14 @@ export function AccountSettings({ profile, ssoAvatarUrl }: AccountSettingsProps)
       if (avatarFile) {
         setIsUploading(true)
 
-        // Delete old avatar if exists
-        if (avatarUrl) {
-          const oldPath = avatarUrl.split("/").pop()
-          if (oldPath) {
-            await supabase.storage.from("avatars").remove([`${profile.id}/${oldPath}`])
+        if (avatarUrl && avatarUrl.includes("avatars")) {
+          try {
+            const urlParts = avatarUrl.split("/")
+            const fileName = urlParts[urlParts.length - 1]
+            const filePath = `${profile.id}/${fileName}`
+            await supabase.storage.from("avatars").remove([filePath])
+          } catch (err) {
+            console.error("Failed to delete old avatar:", err)
           }
         }
 
@@ -113,9 +127,12 @@ export function AccountSettings({ profile, ssoAvatarUrl }: AccountSettingsProps)
 
       if (updateError) throw updateError
 
-      router.refresh()
+      setAvatarUrl(newAvatarUrl)
       setAvatarFile(null)
       setPreviewUrl(null)
+
+      // Refresh to update navbar
+      router.refresh()
     } catch (err: any) {
       setError(err.message || "Failed to update profile")
     } finally {
