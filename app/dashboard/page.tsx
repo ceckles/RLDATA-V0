@@ -74,10 +74,10 @@ export default async function DashboardPage() {
     supabase.from("shooting_sessions").select("*", { count: "exact", head: true }).eq("user_id", user.id),
     supabase
       .from("shooting_sessions")
-      .select("*, firearms(*)")
+      .select("*, firearms(*), shot_data(*)")
       .eq("user_id", user.id)
-      .order("session_date", { ascending: false })
-      .limit(5),
+      .order("date", { ascending: false })
+      .limit(10),
     supabase.from("components").select("*").eq("user_id", user.id),
     supabase.from("firearms").select("*, maintenance_schedules(*)").eq("user_id", user.id),
   ])
@@ -278,14 +278,15 @@ export default async function DashboardPage() {
             <CardDescription>Upgrade to Premium to unlock detailed performance insights</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <p className="text-sm text-muted-foreground">
-                  Get access to performance trends, group size analysis, and environmental impact charts
+                  Get access to performance trends, velocity analysis, environmental impact charts, and firearm
+                  comparisons
                 </p>
               </div>
               <Link href="/dashboard/settings">
-                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 whitespace-nowrap">
                   Upgrade Now
                 </button>
               </Link>
