@@ -122,7 +122,7 @@ export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListPro
               >
                 {firearm.image_url && (
                   <div
-                    className="h-48 bg-cover bg-top relative"
+                    className="h-48 bg-cover bg-top relative -m-6 mb-0 rounded-t-lg"
                     style={{ backgroundImage: `url(${firearm.image_url})` }}
                   >
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background" />
