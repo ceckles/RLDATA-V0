@@ -45,6 +45,7 @@ export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDi
     twist_rate: firearm.twist_rate || "",
     purchase_date: firearm.purchase_date || "",
     notes: firearm.notes || "",
+    round_count: firearm.round_count?.toString() || "0",
   })
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,6 +132,7 @@ export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDi
           purchase_date: formData.purchase_date || null,
           notes: formData.notes || null,
           image_url: imageUrl,
+          round_count: formData.round_count ? Number.parseInt(formData.round_count) : 0,
         })
         .eq("id", firearm.id)
 
@@ -261,9 +263,15 @@ export function EditFirearmDialog({ firearm, open, onOpenChange }: EditFirearmDi
 
             <div className="grid gap-2">
               <Label htmlFor="round_count">Current Round Count</Label>
-              <Input id="round_count" type="number" value={firearm.round_count || 0} disabled className="bg-muted" />
+              <Input
+                id="round_count"
+                type="number"
+                min="0"
+                value={formData.round_count}
+                onChange={(e) => setFormData({ ...formData, round_count: e.target.value })}
+              />
               <p className="text-xs text-muted-foreground">
-                Round count is automatically tracked through shooting sessions
+                Round count is automatically updated through shooting sessions, but can be manually adjusted if needed
               </p>
             </div>
 
