@@ -22,15 +22,15 @@ export default async function ReloadingPage() {
 
   return (
     <div className="container mx-auto max-w-7xl py-6 px-4 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <FlaskConical className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <FlaskConical className="h-6 w-6 sm:h-8 sm:w-8" />
             Ammunition Inventory
           </h1>
-          <p className="text-muted-foreground">Track hand-loaded and factory ammunition batches</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Track hand-loaded and factory ammunition batches</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
           <TrackingPreferencesDialog userId={user.id} preferences={preferences} />
           <AddAmmunitionBatchDialog userId={user.id} components={components || []} preferences={preferences} />
         </div>
