@@ -12,7 +12,6 @@ export interface Profile {
   id: string
   email: string
   full_name: string | null
-  role: "user" | "moderator" | "admin"
   subscription_tier: SubscriptionTier
   lemon_squeezy_customer_id: string | null
   lemon_squeezy_subscription_id: string | null
@@ -215,32 +214,6 @@ export interface UserTrackingPreferences {
   track_crimp_type: boolean
   track_crimp_measurement: boolean
   track_number_of_firings: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface Log {
-  id: string
-  user_id: string | null
-  level: "debug" | "info" | "warn" | "error"
-  category: string
-  message: string
-  metadata: Record<string, any>
-  stack_trace: string | null
-  user_agent: string | null
-  ip_address: string | null
-  path: string | null
-  created_at: string
-}
-
-export type UserRole = "user" | "moderator" | "admin"
-
-export interface FeatureFlag {
-  id: string
-  feature_key: string
-  feature_name: string
-  description: string | null
-  is_enabled: boolean
   created_at: string
   updated_at: string
 }

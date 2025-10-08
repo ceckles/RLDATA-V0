@@ -26,7 +26,6 @@ import {
   Crown,
   Menu,
   TrendingUp,
-  Shield,
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -40,10 +39,6 @@ export function DashboardNav({ profile }: DashboardNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-
-  console.log("[v0] DashboardNav profile:", profile)
-  console.log("[v0] DashboardNav role:", profile?.role)
-  console.log("[v0] Role check result:", profile?.role === "admin" || profile?.role === "moderator")
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -71,10 +66,6 @@ export function DashboardNav({ profile }: DashboardNavProps) {
     { href: "/dashboard/shooting", label: "Shooting", icon: Crosshair },
     { href: "/dashboard/analytics", label: "Analytics", icon: TrendingUp },
   ]
-
-  if (profile?.role === "admin" || profile?.role === "moderator") {
-    navItems.push({ href: "/dashboard/admin", label: "Admin", icon: Shield })
-  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
