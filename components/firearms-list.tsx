@@ -3,8 +3,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import type { Firearm } from "@/lib/types"
-import { Edit, Trash2 } from "lucide-react"
+import type { Firearm, MaintenanceSchedule } from "@/lib/types"
+import { Edit, Trash2, AlertTriangle } from "lucide-react"
 import { useState } from "react"
 import { EditFirearmDialog } from "./edit-firearm-dialog"
 import { DeleteFirearmDialog } from "./delete-firearm-dialog"
@@ -12,11 +12,52 @@ import { MaintenanceScheduleDialog } from "./maintenance-schedule-dialog"
 
 interface FirearmsListProps {
   firearms: Firearm[]
+  maintenanceSchedules: MaintenanceSchedule[]
 }
 
-export function FirearmsList({ firearms }: FirearmsListProps) {
+export function FirearmsList({ firearms, maintenanceSchedules }: FirearmsListProps) {
   const [editingFirearm, setEditingFirearm] = useState<Firearm | null>(null)
   const [deletingFirearm, setDeletingFirearm] = useState<Firearm | null>(null)
+
+  const getFirearmMaintenanceStatus = (firearm: Firearm) => {
+    const firearmSchedules = maintenanceSchedules.filter((s) => s.firearm_id === firearm.id)
+    if (firearmSchedules.length === 0) return null
+
+    let overdueCount = 0
+    let dueSoonCount = 0
+
+    firearmSchedules.forEach((schedule) => {
+      if (schedule.interval_type === "rounds") {
+        const roundsSinceLastMaintenance = firearm.round_count - (schedule.last_completed_round_count || 0)
+        const roundsUntilDue = schedule.interval_value - roundsSinceLastMaintenance
+
+        if (roundsUntilDue <= 0) {
+          overdueCount++
+        } else if (roundsUntilDue <= schedule.interval_value * 0.2) {
+          dueSoonCount++
+        }
+      } else if (schedule.interval_type === "days" && schedule.last_completed_at) {
+        const daysSinceLastMaintenance = Math.floor(
+          (Date.now() - new Date(schedule.last_completed_at).getTime()) / (1000 * 60 * 60 * 24),
+        )
+        const daysUntilDue = schedule.interval_value - daysSinceLastMaintenance
+
+        if (daysUntilDue <= 0) {
+          overdueCount++
+        } else if (daysUntilDue <= schedule.interval_value * 0.2) {
+          dueSoonCount++
+        }
+      }
+    })
+
+    if (overdueCount > 0) {
+      return { status: "overdue", count: overdueCount, message: `${overdueCount} overdue` }
+    }
+    if (dueSoonCount > 0) {
+      return { status: "due-soon", count: dueSoonCount, message: `${dueSoonCount} due soon` }
+    }
+    return null
+  }
 
   const getFirearmBadgeColor = (type: string) => {
     switch (type) {
@@ -46,86 +87,106 @@ export function FirearmsList({ firearms }: FirearmsListProps) {
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {firearms.map((firearm) => (
-          <Card key={firearm.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-lg">{firearm.manufacturer}</CardTitle>
-                  <CardDescription>{firearm.model}</CardDescription>
+        {firearms.map((firearm) => {
+          const maintenanceStatus = getFirearmMaintenanceStatus(firearm)
+          const firearmSchedules = maintenanceSchedules.filter((s) => s.firearm_id === firearm.id)
+
+          return (
+            <Card key={firearm.id} className={maintenanceStatus?.status === "overdue" ? "border-red-500" : ""}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">{firearm.manufacturer}</CardTitle>
+                    <CardDescription>{firearm.model}</CardDescription>
+                  </div>
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge variant="outline" className={`capitalize ${getFirearmBadgeColor(firearm.type)}`}>
+                      {firearm.type}
+                    </Badge>
+                    {maintenanceStatus && (
+                      <Badge
+                        variant="outline"
+                        className={
+                          maintenanceStatus.status === "overdue"
+                            ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-950 dark:text-red-300 dark:border-red-800"
+                            : "bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800"
+                        }
+                      >
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        {maintenanceStatus.message}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <Badge variant="outline" className={`capitalize ${getFirearmBadgeColor(firearm.type)}`}>
-                  {firearm.type}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Caliber:</span>
-                  <p className="font-medium">{firearm.caliber}</p>
-                </div>
-                {firearm.serial_number && (
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Serial:</span>
-                    <p className="font-medium">{firearm.serial_number}</p>
+                    <span className="text-muted-foreground">Caliber:</span>
+                    <p className="font-medium">{firearm.caliber}</p>
+                  </div>
+                  {firearm.serial_number && (
+                    <div>
+                      <span className="text-muted-foreground">Serial:</span>
+                      <p className="font-medium">{firearm.serial_number}</p>
+                    </div>
+                  )}
+                  {firearm.barrel_length && (
+                    <div>
+                      <span className="text-muted-foreground">Barrel:</span>
+                      <p className="font-medium">{firearm.barrel_length}"</p>
+                    </div>
+                  )}
+                  {firearm.twist_rate && (
+                    <div>
+                      <span className="text-muted-foreground">Twist:</span>
+                      <p className="font-medium">1:{firearm.twist_rate}"</p>
+                    </div>
+                  )}
+                  {firearm.purchase_date && (
+                    <div>
+                      <span className="text-muted-foreground">Purchased:</span>
+                      <p className="font-medium">{new Date(firearm.purchase_date).toLocaleDateString()}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="text-muted-foreground">Round Count:</span>
+                    <p className="font-medium">{firearm.round_count.toLocaleString()}</p>
+                  </div>
+                </div>
+                {firearm.notes && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground">Notes:</span>
+                    <p className="mt-1">{firearm.notes}</p>
                   </div>
                 )}
-                {firearm.barrel_length && (
-                  <div>
-                    <span className="text-muted-foreground">Barrel:</span>
-                    <p className="font-medium">{firearm.barrel_length}"</p>
+                <div className="flex flex-col gap-2 pt-2">
+                  <MaintenanceScheduleDialog firearm={firearm} schedules={firearmSchedules} />
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300 bg-transparent"
+                      onClick={() => setEditingFirearm(firearm)}
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300 bg-transparent"
+                      onClick={() => setDeletingFirearm(firearm)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
                   </div>
-                )}
-                {firearm.twist_rate && (
-                  <div>
-                    <span className="text-muted-foreground">Twist:</span>
-                    <p className="font-medium">1:{firearm.twist_rate}"</p>
-                  </div>
-                )}
-                {firearm.purchase_date && (
-                  <div>
-                    <span className="text-muted-foreground">Purchased:</span>
-                    <p className="font-medium">{new Date(firearm.purchase_date).toLocaleDateString()}</p>
-                  </div>
-                )}
-                <div>
-                  <span className="text-muted-foreground">Round Count:</span>
-                  <p className="font-medium">{firearm.round_count.toLocaleString()}</p>
                 </div>
-              </div>
-              {firearm.notes && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Notes:</span>
-                  <p className="mt-1">{firearm.notes}</p>
-                </div>
-              )}
-              <div className="flex flex-col gap-2 pt-2">
-                <MaintenanceScheduleDialog firearm={firearm} schedules={[]} />
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 border-blue-300 text-blue-700 hover:bg-blue-50 hover:text-blue-800 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950 dark:hover:text-blue-300 bg-transparent"
-                    onClick={() => setEditingFirearm(firearm)}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 border-red-300 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950 dark:hover:text-red-300 bg-transparent"
-                    onClick={() => setDeletingFirearm(firearm)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
 
       {editingFirearm && (
