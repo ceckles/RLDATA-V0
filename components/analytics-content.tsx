@@ -203,7 +203,7 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
           sessionKey: `session${index}`, // Simple key for CSS variables
           sessionLabel: `${new Date(session.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${session.firearms?.name || "Unknown"}`,
           shots: velocityShots,
-          color: `hsl(var(--chart-${(index % 5) + 1}))`, // Direct color reference
+          chartIndex: (index % 5) + 1,
         }
       })
       .filter(Boolean)
@@ -212,10 +212,8 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
       return { shotVelocityChartData: [], velocityChartConfig: {}, sessionKeys: [], hasVelocityData: false }
     }
 
-    // Find the maximum number of shots across all sessions
     const maxShots = Math.max(...sessionsWithVelocity.map((s) => s!.shots.length))
 
-    // Create chart data with one entry per shot number
     const chartData = Array.from({ length: maxShots }, (_, i) => {
       const shotNumber = i + 1
       const dataPoint: any = { shotNumber }
@@ -228,19 +226,18 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
       return dataPoint
     })
 
-    // Create config with simple keys
     const config: any = {}
     sessionsWithVelocity.forEach((session) => {
       config[session!.sessionKey] = {
         label: session!.sessionLabel,
-        color: session!.color,
+        color: `hsl(var(--chart-${session!.chartIndex}))`,
       }
     })
 
     return {
       shotVelocityChartData: chartData,
       velocityChartConfig: config,
-      sessionKeys: sessionsWithVelocity.map((s) => ({ key: s!.sessionKey, color: s!.color })),
+      sessionKeys: sessionsWithVelocity.map((s) => s!.sessionKey),
       hasVelocityData: true,
     }
   }, [selectedSessionData])
@@ -615,15 +612,15 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                               }}
                             />
                           )}
-                          {sessionKeys.map((session) => (
+                          {sessionKeys.map((sessionKey) => (
                             <Line
-                              key={session.key}
+                              key={sessionKey}
                               type="monotone"
-                              dataKey={session.key}
-                              stroke={session.color}
+                              dataKey={sessionKey}
+                              stroke={`var(--color-${sessionKey})`}
                               strokeWidth={2.5}
                               dot={{
-                                fill: session.color,
+                                fill: `var(--color-${sessionKey})`,
                                 r: 4,
                                 strokeWidth: 2,
                                 stroke: "hsl(var(--background))",
@@ -632,7 +629,7 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                                 r: 6,
                                 strokeWidth: 2,
                                 stroke: "hsl(var(--background))",
-                                fill: session.color,
+                                fill: `var(--color-${sessionKey})`,
                               }}
                               connectNulls={false}
                             />
