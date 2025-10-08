@@ -8,7 +8,7 @@ export type FirearmType = "rifle" | "pistol" | "shotgun" | "other"
 
 export type MaintenanceType = "cleaning" | "repair" | "modification" | "inspection" | "other"
 
-export type UserRole = "admin" | "moderator" | "subscriber" | "donator" | "tester"
+export type UserRole = "admin" | "moderator" | "subscriber" | "donator" | "tester" | "user"
 
 export interface Profile {
   id: string

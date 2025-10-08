@@ -1,7 +1,7 @@
 import type React from "react"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Shield, Star, Heart, FlaskConical, Crown } from "lucide-react"
+import { Shield, Star, Heart, FlaskConical, Crown, User } from "lucide-react"
 import type { UserRole } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
@@ -21,6 +21,12 @@ const roleConfig: Record<
     description: string
   }
 > = {
+  user: {
+    label: "User",
+    icon: User,
+    className: "bg-slate-600 text-white border-0 hover:bg-slate-700",
+    description: "Standard user account",
+  },
   admin: {
     label: "Admin",
     icon: Crown,
@@ -56,6 +62,12 @@ const roleConfig: Record<
 
 export function RoleBadge({ role, description, className, showIcon = true }: RoleBadgeProps) {
   const config = roleConfig[role]
+
+  if (!config) {
+    console.error(`[v0] Unknown role: ${role}`)
+    return null
+  }
+
   const Icon = config.icon
 
   return (
