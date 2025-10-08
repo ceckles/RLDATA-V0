@@ -548,8 +548,8 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                         >
                           <BarChart data={comparisonData.filter((d) => d.groupSize)}>
                             <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                            <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                            <XAxis dataKey="date" stroke="#888888" tick={{ fill: "#888888" }} fontSize={11} />
+                            <YAxis stroke="#888888" tick={{ fill: "#888888" }} fontSize={11} />
                             <ChartTooltip
                               content={
                                 <ChartTooltipContent
@@ -594,27 +594,27 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                               <XAxis
                                 dataKey="shotNumber"
-                                stroke="hsl(var(--foreground))"
-                                tick={{ fill: "hsl(var(--foreground))" }}
+                                stroke="#888888"
+                                tick={{ fill: "#888888" }}
                                 fontSize={12}
                                 label={{
                                   value: "Shot Number",
                                   position: "insideBottom",
                                   offset: -5,
                                   fontSize: 12,
-                                  fill: "hsl(var(--foreground))",
+                                  fill: "#888888",
                                 }}
                               />
                               <YAxis
-                                stroke="hsl(var(--foreground))"
-                                tick={{ fill: "hsl(var(--foreground))" }}
+                                stroke="#888888"
+                                tick={{ fill: "#888888" }}
                                 fontSize={12}
                                 label={{
                                   value: "Velocity (fps)",
                                   angle: -90,
                                   position: "insideLeft",
                                   fontSize: 12,
-                                  fill: "hsl(var(--foreground))",
+                                  fill: "#888888",
                                 }}
                                 domain={["auto", "auto"]}
                               />
@@ -701,7 +701,7 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                               dataKey="x"
                               name="Horizontal"
                               unit='"'
-                              stroke="hsl(var(--muted-foreground))"
+                              stroke="#888888"
                               fontSize={11}
                               domain={["auto", "auto"]}
                             />
@@ -710,7 +710,7 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                               dataKey="y"
                               name="Vertical"
                               unit='"'
-                              stroke="hsl(var(--muted-foreground))"
+                              stroke="#888888"
                               fontSize={11}
                               domain={["auto", "auto"]}
                             />
