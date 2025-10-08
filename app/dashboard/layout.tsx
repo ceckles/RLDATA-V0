@@ -22,9 +22,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq("id", user.id)
     .single()
 
-  console.log("[v0] Dashboard Layout - profile data:", profile)
-  console.log("[v0] Dashboard Layout - avatar_url:", profile?.avatar_url)
-
   const ssoAvatarUrl = user.user_metadata?.avatar_url || null
 
   return (
