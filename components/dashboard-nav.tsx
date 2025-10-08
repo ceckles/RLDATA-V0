@@ -48,6 +48,9 @@ export function DashboardNav({ profile: initialProfile, ssoAvatarUrl }: Dashboar
         .eq("id", user.id)
         .single()
 
+      console.log("[v0] DashboardNav SWR - profile data:", data)
+      console.log("[v0] DashboardNav SWR - avatar_url:", data?.avatar_url)
+
       return data
     },
     {
