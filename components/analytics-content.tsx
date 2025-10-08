@@ -129,19 +129,22 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
       : []
 
   const shotVelocityData =
-    selectedSessionData.length > 0
-      ? selectedSessionData.flatMap((session) => {
-          const shotData = session.shot_data || []
-          return shotData
-            .filter((shot) => shot.velocity !== null)
-            .map((shot) => ({
-              sessionId: session.id,
-              sessionDate: new Date(session.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-              shotNumber: shot.shot_number,
-              velocity: shot.velocity!,
-              firearm: session.firearms ? `${session.firearms.manufacturer} ${session.firearms.model}` : "Unknown",
-            }))
-        })
+    selectedSessionData.length === 1 && selectedSessionData[0].shot_data
+      ? selectedSessionData[0].shot_data
+          .filter((shot) => shot.velocity !== null)
+          .sort((a, b) => a.shot_number - b.shot_number)
+          .map((shot) => ({
+            sessionId: selectedSessionData[0].id,
+            sessionDate: new Date(selectedSessionData[0].date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            }),
+            shotNumber: shot.shot_number,
+            velocity: shot.velocity!,
+            firearm: selectedSessionData[0].firearms
+              ? `${selectedSessionData[0].firearms.manufacturer} ${selectedSessionData[0].firearms.model}`
+              : "Unknown",
+          }))
       : []
 
   const velocityStats = selectedSessionData
@@ -505,8 +508,7 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                   </Card>
                 )}
 
-                {/* Shot-by-Shot Velocity */}
-                {shotVelocityData.length > 0 && (
+                {selectedSessions.length === 1 && shotVelocityData.length > 0 && (
                   <Card className={comparisonData.some((d) => d.groupSize) ? "" : "md:col-span-2"}>
                     <CardHeader>
                       <CardTitle className="text-base flex items-center gap-2">
@@ -573,8 +575,7 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                               />
                             }
                           />
-                          {/* Add mean reference line for single session */}
-                          {selectedSessions.length === 1 && velocityStats[0] && (
+                          {velocityStats[0] && (
                             <ReferenceLine
                               y={velocityStats[0].mean}
                               stroke="var(--color-mean)"
@@ -603,6 +604,26 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                           />
                         </LineChart>
                       </ChartContainer>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {selectedSessions.length > 1 && (
+                  <Card className={comparisonData.some((d) => d.groupSize) ? "" : "md:col-span-2"}>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Zap className="h-4 w-4" />
+                        Shot-by-Shot Velocity
+                      </CardTitle>
+                      <CardDescription>Individual round velocities with mean reference</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-center h-[250px] text-muted-foreground">
+                        <div className="text-center space-y-2">
+                          <p className="text-sm">Select a single session to view shot-by-shot velocity data</p>
+                          <p className="text-xs">Velocity statistics are shown in the cards above</p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
