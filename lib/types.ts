@@ -12,6 +12,7 @@ export interface Profile {
   id: string
   email: string
   full_name: string | null
+  role: "user" | "moderator" | "admin"
   subscription_tier: SubscriptionTier
   lemon_squeezy_customer_id: string | null
   lemon_squeezy_subscription_id: string | null

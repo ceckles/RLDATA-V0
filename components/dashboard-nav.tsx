@@ -41,6 +41,10 @@ export function DashboardNav({ profile }: DashboardNavProps) {
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  console.log("[v0] DashboardNav profile:", profile)
+  console.log("[v0] DashboardNav role:", profile?.role)
+  console.log("[v0] Role check result:", profile?.role === "admin" || profile?.role === "moderator")
+
   const handleSignOut = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()

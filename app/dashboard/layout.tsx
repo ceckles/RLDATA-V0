@@ -16,6 +16,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
 
+  console.log("[v0] Profile data:", profile)
+  console.log("[v0] Profile role:", profile?.role)
+  console.log("[v0] User ID:", user.id)
+
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardNav profile={profile} />
