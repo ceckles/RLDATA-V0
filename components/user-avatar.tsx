@@ -11,13 +11,7 @@ interface UserAvatarProps {
 }
 
 export function UserAvatar({ profile, ssoAvatarUrl, className, fallbackText }: UserAvatarProps) {
-  console.log("[v0] UserAvatar - profile.avatar_url:", profile?.avatar_url)
-  console.log("[v0] UserAvatar - ssoAvatarUrl:", ssoAvatarUrl)
-
-  // Priority: 1. Uploaded avatar, 2. SSO avatar, 3. Default avatar
   const avatarUrl = profile?.avatar_url || ssoAvatarUrl || "/default-avatar.png"
-
-  console.log("[v0] UserAvatar - final avatarUrl:", avatarUrl)
 
   // Generate fallback initials from name or email
   const getFallbackText = () => {
