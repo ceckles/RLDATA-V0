@@ -61,11 +61,16 @@ const roleConfig: Record<
 }
 
 export function RoleBadge({ role, description, className, showIcon = true }: RoleBadgeProps) {
-  const config = roleConfig[role]
+  const config = roleConfig[role as UserRole]
 
   if (!config) {
     console.error(`[v0] Unknown role: ${role}`)
-    return null
+    // Return a default badge instead of null to prevent React errors
+    return (
+      <Badge variant="outline" className={className}>
+        {role}
+      </Badge>
+    )
   }
 
   const Icon = config.icon

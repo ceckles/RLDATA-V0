@@ -96,7 +96,7 @@ export function AdminUserTable({ users }: AdminUserTableProps) {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {user.roles.length > 0 ? (
-                        user.roles.map((role) => <RoleBadge key={role.id} role={role.name} size="sm" />)
+                        user.roles.map((role) => <RoleBadge key={role.id} role={role.name as any} size="sm" />)
                       ) : (
                         <span className="text-sm text-muted-foreground">No roles</span>
                       )}
