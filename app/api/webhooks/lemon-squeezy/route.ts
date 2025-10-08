@@ -40,6 +40,7 @@ export async function POST(request: Request) {
               subscription_status: subscription?.status || "active",
               lemon_squeezy_customer_id: subscription?.customer_id?.toString() || null,
               lemon_squeezy_subscription_id: event.data.id || null,
+              lemon_squeezy_order_id: subscription?.order_id?.toString() || null, // Added lemon_squeezy_order_id from subscription.order_id
               subscription_ends_at: subscription?.ends_at || null,
             })
             .eq("id", userId)
