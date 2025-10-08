@@ -14,7 +14,19 @@ import { SubscriptionBadge } from "@/components/subscription-badge"
 import ThemeToggle from "@/components/theme-toggle"
 import type { Profile } from "@/lib/types"
 import { createClient } from "@/lib/supabase/client"
-import { BarChart3, Box, LogOut, Settings, Target, User, Wrench, Crosshair, Crown, Menu } from "lucide-react"
+import {
+  BarChart3,
+  Box,
+  LogOut,
+  Settings,
+  Target,
+  User,
+  Wrench,
+  Crosshair,
+  Crown,
+  Menu,
+  TrendingUp,
+} from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
@@ -52,6 +64,7 @@ export function DashboardNav({ profile }: DashboardNavProps) {
     { href: "/dashboard/firearms", label: "Firearms", icon: Target },
     { href: "/dashboard/reloading", label: "Reloading", icon: Wrench },
     { href: "/dashboard/shooting", label: "Shooting", icon: Crosshair },
+    { href: "/dashboard/analytics", label: "Analytics", icon: TrendingUp },
   ]
 
   return (
