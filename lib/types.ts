@@ -8,6 +8,8 @@ export type FirearmType = "rifle" | "pistol" | "shotgun" | "other"
 
 export type MaintenanceType = "cleaning" | "repair" | "modification" | "inspection" | "other"
 
+export type UserRole = "admin" | "moderator" | "subscriber" | "donator" | "tester"
+
 export interface Profile {
   id: string
   email: string
@@ -17,6 +19,7 @@ export interface Profile {
   subscription_tier: SubscriptionTier
   lemon_squeezy_customer_id: string | null
   lemon_squeezy_subscription_id: string | null
+  lemon_squeezy_order_id: string | null // Added for donation tracking
   subscription_status: SubscriptionStatus | null
   subscription_ends_at: string | null
   created_at: string
@@ -231,4 +234,40 @@ export interface UserTrackingPreferences {
   track_number_of_firings: boolean
   created_at: string
   updated_at: string
+}
+
+export interface Role {
+  id: string
+  name: UserRole
+  description: string | null
+  created_at: string
+}
+
+export interface UserRoleAssignment {
+  id: string
+  user_id: string
+  role_id: string
+  assigned_at: string
+  assigned_by: string | null
+  expires_at: string | null
+  lemon_squeezy_order_id: string | null
+  notes: string | null
+}
+
+export interface UserRoleWithDetails {
+  role_name: UserRole
+  role_description: string | null
+  assigned_at: string
+  expires_at: string | null
+}
+
+export interface RoleAuditLog {
+  id: string
+  user_id: string
+  role_name: string
+  action: "assigned" | "removed" | "expired"
+  performed_by: string | null
+  reason: string | null
+  metadata: Record<string, any> | null
+  created_at: string
 }

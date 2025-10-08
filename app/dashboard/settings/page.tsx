@@ -5,7 +5,9 @@ import { UpgradeCard } from "@/components/upgrade-card"
 import { ManageSubscriptionButton } from "@/components/manage-subscription-button"
 import { AccountSettings } from "@/components/account-settings"
 import { CookieSettingsButton } from "@/components/cookie-settings-button"
+import { UserRolesCard } from "@/components/user-roles-card"
 import { Settings } from "lucide-react"
+import { getUserRoles } from "@/lib/roles"
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -22,6 +24,8 @@ export default async function SettingsPage() {
 
   const ssoAvatarUrl = user.user_metadata?.avatar_url || null
 
+  const userRoles = await getUserRoles(user.id)
+
   return (
     <div className="container mx-auto max-w-7xl py-6 px-4 space-y-6">
       <div>
@@ -35,6 +39,10 @@ export default async function SettingsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <AccountSettings profile={profile} ssoAvatarUrl={ssoAvatarUrl} />
 
+        <UserRolesCard roles={userRoles} />
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Subscription</CardTitle>

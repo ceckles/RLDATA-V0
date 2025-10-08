@@ -2,6 +2,7 @@ import { LEMON_SQUEEZY_CONFIG } from "@/lib/lemon-squeezy"
 import { NextResponse } from "next/server"
 import crypto from "crypto"
 import { createAdminClient } from "@/lib/supabase/admin"
+import { assignRole, removeRole, userHasRole } from "@/lib/roles"
 
 function verifySignature(payload: string, signature: string): boolean {
   const hmac = crypto.createHmac("sha256", LEMON_SQUEEZY_CONFIG.webhookSecret)
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
         const subscription = event.data.attributes
 
         if (userId) {
+          // Update profile
           const { data, error } = await supabase
             .from("profiles")
             .update({
@@ -47,6 +49,13 @@ export async function POST(request: Request) {
             console.error("Failed to update profile:", error)
             return NextResponse.json({ error: "Failed to update profile", details: error.message }, { status: 500 })
           }
+
+          const hasSubscriberRole = await userHasRole(userId, "subscriber")
+          if (!hasSubscriberRole && subscription?.status === "active") {
+            await assignRole(userId, "subscriber", userId, {
+              notes: `Auto-assigned via ${eventName}`,
+            })
+          }
         } else {
           console.error("Cannot update profile - no user_id")
         }
@@ -57,6 +66,7 @@ export async function POST(request: Request) {
       case "subscription_expired": {
         const subscription = event.data.attributes
         if (userId) {
+          // Update profile
           await supabase
             .from("profiles")
             .update({
@@ -65,6 +75,11 @@ export async function POST(request: Request) {
               subscription_ends_at: subscription?.ends_at || null,
             })
             .eq("id", userId)
+
+          const hasSubscriberRole = await userHasRole(userId, "subscriber")
+          if (hasSubscriberRole) {
+            await removeRole(userId, "subscriber", userId, `Subscription ${eventName}`)
+          }
         }
         break
       }
@@ -72,6 +87,7 @@ export async function POST(request: Request) {
       case "subscription_resumed": {
         const subscription = event.data.attributes
         if (userId) {
+          // Update profile
           await supabase
             .from("profiles")
             .update({
@@ -80,6 +96,13 @@ export async function POST(request: Request) {
               subscription_ends_at: subscription?.ends_at || null,
             })
             .eq("id", userId)
+
+          const hasSubscriberRole = await userHasRole(userId, "subscriber")
+          if (!hasSubscriberRole) {
+            await assignRole(userId, "subscriber", userId, {
+              notes: "Auto-assigned via subscription_resumed",
+            })
+          }
         }
         break
       }
@@ -92,6 +115,58 @@ export async function POST(request: Request) {
               subscription_status: "paused",
             })
             .eq("id", userId)
+
+          const hasSubscriberRole = await userHasRole(userId, "subscriber")
+          if (hasSubscriberRole) {
+            await removeRole(userId, "subscriber", userId, "Subscription paused")
+          }
+        }
+        break
+      }
+
+      case "subscription_payment_failed": {
+        if (userId) {
+          // Log the payment failure but don't immediately remove role
+          // Give grace period for payment retry
+          console.log(`Payment failed for user ${userId}`)
+        }
+        break
+      }
+
+      case "order_created": {
+        const order = event.data.attributes
+        const orderType = customData?.order_type // 'donation' or 'subscription'
+
+        if (userId && orderType === "donation") {
+          // Update profile with order ID
+          await supabase
+            .from("profiles")
+            .update({
+              lemon_squeezy_order_id: event.data.id,
+            })
+            .eq("id", userId)
+
+          // Assign donator role
+          const hasDonatorRole = await userHasRole(userId, "donator")
+          if (!hasDonatorRole) {
+            await assignRole(userId, "donator", userId, {
+              lemonSqueezyOrderId: event.data.id,
+              notes: `Donation of ${order.total_formatted || "unknown amount"}`,
+            })
+          }
+        }
+        break
+      }
+
+      case "order_refunded": {
+        const orderType = customData?.order_type
+
+        if (userId && orderType === "donation") {
+          // Remove donator role if refunded
+          const hasDonatorRole = await userHasRole(userId, "donator")
+          if (hasDonatorRole) {
+            await removeRole(userId, "donator", userId, "Donation refunded")
+          }
         }
         break
       }
