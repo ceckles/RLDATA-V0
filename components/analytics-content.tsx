@@ -22,6 +22,7 @@ import {
   ZAxis,
   Bar,
   BarChart,
+  ReferenceLine,
 } from "recharts"
 import Link from "next/link"
 
@@ -127,6 +128,58 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
             velocity: shot.velocity,
           }))
       : []
+
+  const shotVelocityData =
+    selectedSessionData.length > 0
+      ? selectedSessionData.flatMap((session) => {
+          const shotData = session.shot_data || []
+          return shotData
+            .filter((shot) => shot.velocity !== null)
+            .map((shot) => ({
+              sessionId: session.id,
+              sessionDate: new Date(session.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+              shotNumber: shot.shot_number,
+              velocity: shot.velocity!,
+              firearm: session.firearms ? `${session.firearms.manufacturer} ${session.firearms.model}` : "Unknown",
+            }))
+        })
+      : []
+
+  const velocityStats = selectedSessionData
+    .map((session) => {
+      const shotData = session.shot_data || []
+      const velocities = shotData.filter((s) => s.velocity).map((s) => s.velocity!)
+
+      if (velocities.length === 0) return null
+
+      const avgVelocity = velocities.reduce((a, b) => a + b, 0) / velocities.length
+      const maxVelocity = Math.max(...velocities)
+      const minVelocity = Math.min(...velocities)
+      const es = maxVelocity - minVelocity
+      const sd =
+        velocities.length > 1
+          ? Math.sqrt(velocities.reduce((sum, v) => sum + Math.pow(v - avgVelocity, 2), 0) / velocities.length)
+          : 0
+      const cv = avgVelocity > 0 ? (sd / avgVelocity) * 100 : 0
+
+      return {
+        sessionId: session.id,
+        sessionDate: new Date(session.date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        firearm: session.firearms ? `${session.firearms.manufacturer} ${session.firearms.model}` : "Unknown",
+        shotCount: velocities.length,
+        mean: Math.round(avgVelocity),
+        high: maxVelocity,
+        low: minVelocity,
+        es: Math.round(es),
+        sd: Math.round(sd * 10) / 10,
+        cv: Math.round(cv * 100) / 100,
+      }
+    })
+    .filter(Boolean)
 
   return (
     <div className="space-y-6">
@@ -356,6 +409,56 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                 </CardContent>
               </Card>
 
+              {velocityStats.length > 0 && (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {velocityStats.map((stats) => (
+                    <Card key={stats!.sessionId}>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Zap className="h-4 w-4" />
+                          Velocity Statistics
+                        </CardTitle>
+                        <CardDescription className="text-xs">
+                          {stats!.sessionDate} • {stats!.firearm}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Shot Count</p>
+                            <p className="text-lg font-bold">{stats!.shotCount}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Mean Velocity</p>
+                            <p className="text-lg font-bold">{stats!.mean} fps</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">High</p>
+                            <p className="font-semibold text-green-600 dark:text-green-400">{stats!.high} fps</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Low</p>
+                            <p className="font-semibold text-red-600 dark:text-red-400">{stats!.low} fps</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Std Dev (SD)</p>
+                            <p className="font-semibold">{stats!.sd} fps</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Extreme Spread (ES)</p>
+                            <p className="font-semibold">{stats!.es} fps</p>
+                          </div>
+                          <div className="col-span-2">
+                            <p className="text-xs text-muted-foreground">Coefficient of Variation (CV)</p>
+                            <p className="font-semibold">{stats!.cv}%</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
               {/* Charts Grid */}
               <div className="grid gap-4 md:grid-cols-2">
                 {/* Group Size Comparison */}
@@ -394,46 +497,76 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                   </Card>
                 )}
 
-                {/* Velocity Comparison */}
-                {comparisonData.some((d) => d.avgVelocity) && (
-                  <Card>
+                {shotVelocityData.length > 0 && (
+                  <Card className={comparisonData.some((d) => d.groupSize) ? "" : "md:col-span-2"}>
                     <CardHeader>
                       <CardTitle className="text-base flex items-center gap-2">
                         <Zap className="h-4 w-4" />
-                        Velocity Comparison
+                        Shot-by-Shot Velocity
                       </CardTitle>
-                      <CardDescription>Average velocity across sessions</CardDescription>
+                      <CardDescription>Individual round velocities with mean reference</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={comparisonData.filter((d) => d.avgVelocity)}>
+                        <LineChart data={shotVelocityData}>
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis dataKey="date" stroke="#888888" fontSize={11} />
-                          <YAxis stroke="#888888" fontSize={11} />
+                          <XAxis
+                            dataKey="shotNumber"
+                            stroke="#888888"
+                            fontSize={11}
+                            label={{ value: "Shot Number", position: "insideBottom", offset: -5, fontSize: 11 }}
+                          />
+                          <YAxis
+                            stroke="#888888"
+                            fontSize={11}
+                            label={{ value: "Velocity (fps)", angle: -90, position: "insideLeft", fontSize: 11 }}
+                            domain={["auto", "auto"]}
+                          />
                           <Tooltip
                             content={({ active, payload }) => {
                               if (active && payload && payload.length) {
+                                const data = payload[0].payload
+                                const sessionStats = velocityStats.find((s) => s!.sessionId === data.sessionId)
                                 return (
                                   <div className="rounded-lg border bg-background p-3 shadow-md">
-                                    <p className="text-sm font-medium">{payload[0].payload.date}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                      Velocity:{" "}
-                                      <span className="font-bold text-foreground">{payload[0].value} fps</span>
+                                    <p className="text-sm font-medium">Shot #{data.shotNumber}</p>
+                                    <p className="text-sm">
+                                      Velocity: <span className="font-bold">{data.velocity} fps</span>
                                     </p>
-                                    <p className="text-xs text-muted-foreground">SD: {payload[0].payload.sd} fps</p>
-                                    <p className="text-xs text-muted-foreground">ES: {payload[0].payload.es} fps</p>
+                                    {sessionStats && (
+                                      <>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                          Mean: {sessionStats.mean} fps
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          Δ: {data.velocity > sessionStats.mean ? "+" : ""}
+                                          {data.velocity - sessionStats.mean} fps
+                                        </p>
+                                      </>
+                                    )}
+                                    <p className="text-xs text-muted-foreground mt-1">{data.sessionDate}</p>
                                   </div>
                                 )
                               }
                               return null
                             }}
                           />
+                          {/* Add mean reference line for single session */}
+                          {selectedSessions.length === 1 && velocityStats[0] && (
+                            <ReferenceLine
+                              y={velocityStats[0].mean}
+                              stroke="hsl(var(--muted-foreground))"
+                              strokeDasharray="3 3"
+                              label={{ value: `Mean: ${velocityStats[0].mean} fps`, position: "right", fontSize: 11 }}
+                            />
+                          )}
                           <Line
                             type="monotone"
-                            dataKey="avgVelocity"
+                            dataKey="velocity"
                             stroke="hsl(var(--primary))"
                             strokeWidth={2}
-                            dot={{ r: 4 }}
+                            dot={{ r: 4, fill: "hsl(var(--primary))" }}
+                            activeDot={{ r: 6 }}
                           />
                         </LineChart>
                       </ResponsiveContainer>
