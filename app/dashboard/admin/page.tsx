@@ -10,25 +10,32 @@ import { hasRole } from "@/lib/roles"
 export const revalidate = 0
 
 export default async function AdminPage() {
+  console.log("[v0] Admin page loading...")
+
   const supabase = await createClient()
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
+  console.log("[v0] User:", user?.id)
+
   if (!user) {
     redirect("/auth/login")
   }
 
   // Check if user has admin role
+  console.log("[v0] Checking admin role...")
   const isAdmin = await hasRole(user.id, "admin")
+  console.log("[v0] Is admin:", isAdmin)
 
   if (!isAdmin) {
     redirect("/unauthorized")
   }
 
+  console.log("[v0] Fetching users...")
   // Fetch all users with their profiles and roles
-  const { data: users } = await supabase
+  const { data: users, error: usersError } = await supabase
     .from("profiles")
     .select(
       `
@@ -44,8 +51,11 @@ export default async function AdminPage() {
     )
     .order("created_at", { ascending: false })
 
+  console.log("[v0] Users fetched:", users?.length, "Error:", usersError)
+
+  console.log("[v0] Fetching role assignments...")
   // Fetch role assignments for all users
-  const { data: roleAssignments } = await supabase
+  const { data: roleAssignments, error: rolesError } = await supabase
     .from("user_roles")
     .select(
       `
@@ -63,8 +73,11 @@ export default async function AdminPage() {
     )
     .order("assigned_at", { ascending: false })
 
+  console.log("[v0] Role assignments fetched:", roleAssignments?.length, "Error:", rolesError)
+
+  console.log("[v0] Fetching audit logs...")
   // Fetch audit logs
-  const { data: auditLogs } = await supabase
+  const { data: auditLogs, error: auditError } = await supabase
     .from("role_audit_log")
     .select(
       `
@@ -92,6 +105,8 @@ export default async function AdminPage() {
     .order("performed_at", { ascending: false })
     .limit(50)
 
+  console.log("[v0] Audit logs fetched:", auditLogs?.length, "Error:", auditError)
+
   // Combine users with their roles
   const usersWithRoles =
     users?.map((user) => ({
@@ -109,11 +124,15 @@ export default async function AdminPage() {
           })) || [],
     })) || []
 
+  console.log("[v0] Users with roles:", usersWithRoles.length)
+
   // Calculate stats
   const totalUsers = users?.length || 0
   const premiumUsers = users?.filter((u) => u.subscription_tier === "premium").length || 0
   const adminUsers = usersWithRoles.filter((u) => u.roles.some((r) => r.name === "admin")).length
   const subscriberUsers = usersWithRoles.filter((u) => u.roles.some((r) => r.name === "subscriber")).length
+
+  console.log("[v0] Stats:", { totalUsers, premiumUsers, adminUsers, subscriberUsers })
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6 space-y-6">
