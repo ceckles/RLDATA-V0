@@ -19,16 +19,43 @@ import { BarChart3, Box, LogOut, Settings, Target, Wrench, Crosshair, Crown, Men
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
+import useSWR from "swr"
 
 interface DashboardNavProps {
   profile: Profile | null
   ssoAvatarUrl?: string | null
 }
 
-export function DashboardNav({ profile, ssoAvatarUrl }: DashboardNavProps) {
+export function DashboardNav({ profile: initialProfile, ssoAvatarUrl }: DashboardNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const { data: profile } = useSWR<Profile | null>(
+    "profile",
+    async () => {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return null
+
+      const { data } = await supabase
+        .from("profiles")
+        .select(
+          "id, email, full_name, username, avatar_url, subscription_status, subscription_tier, subscription_end_date",
+        )
+        .eq("id", user.id)
+        .single()
+
+      return data
+    },
+    {
+      fallbackData: initialProfile,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+    },
+  )
 
   const handleSignOut = async () => {
     const supabase = createClient()

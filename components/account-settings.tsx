@@ -12,6 +12,7 @@ import { createBrowserClient } from "@supabase/ssr"
 import { Upload, X, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { Profile } from "@/lib/types"
+import { mutate } from "swr"
 
 interface AccountSettingsProps {
   profile: Profile
@@ -131,7 +132,9 @@ export function AccountSettings({ profile, ssoAvatarUrl }: AccountSettingsProps)
       setAvatarFile(null)
       setPreviewUrl(null)
 
-      // Refresh to update navbar
+      await mutate("profile")
+
+      // Refresh to update server components
       router.refresh()
     } catch (err: any) {
       setError(err.message || "Failed to update profile")
