@@ -7,13 +7,12 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import type { Profile, ShootingSession } from "@/lib/types"
 import { BarChart3, Target, TrendingUp, Zap, Wind, Crown, Filter, X } from "lucide-react"
 import {
   Line,
   LineChart,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -469,34 +468,44 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                       <CardDescription>Accuracy across selected sessions</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={250}>
+                      <ChartContainer
+                        config={{
+                          groupSize: {
+                            label: "Group Size",
+                            color: "hsl(var(--chart-1))",
+                          },
+                        }}
+                        className="h-[250px]"
+                      >
                         <BarChart data={comparisonData.filter((d) => d.groupSize)}>
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                          <XAxis dataKey="date" stroke="#888888" fontSize={11} />
-                          <YAxis stroke="#888888" fontSize={11} />
-                          <Tooltip
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                return (
-                                  <div className="rounded-lg border bg-background p-3 shadow-md">
-                                    <p className="text-sm font-medium">{payload[0].payload.date}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                      Group: <span className="font-bold text-foreground">{payload[0].value}"</span>
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">{payload[0].payload.firearm}</p>
+                          <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                          <ChartTooltip
+                            content={
+                              <ChartTooltipContent
+                                formatter={(value, name, item) => (
+                                  <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium">{item.payload.date}</span>
+                                    </div>
+                                    <div className="text-sm">
+                                      Group: <span className="font-bold">{value}"</span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">{item.payload.firearm}</div>
                                   </div>
-                                )
-                              }
-                              return null
-                            }}
+                                )}
+                              />
+                            }
                           />
-                          <Bar dataKey="groupSize" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="groupSize" fill="var(--color-groupSize)" radius={[4, 4, 0, 0]} />
                         </BarChart>
-                      </ResponsiveContainer>
+                      </ChartContainer>
                     </CardContent>
                   </Card>
                 )}
 
+                {/* Shot-by-Shot Velocity */}
                 {shotVelocityData.length > 0 && (
                   <Card className={comparisonData.some((d) => d.groupSize) ? "" : "md:col-span-2"}>
                     <CardHeader>
@@ -507,69 +516,93 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                       <CardDescription>Individual round velocities with mean reference</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={250}>
+                      <ChartContainer
+                        config={{
+                          velocity: {
+                            label: "Velocity",
+                            color: "hsl(var(--chart-1))",
+                          },
+                          mean: {
+                            label: "Mean",
+                            color: "hsl(var(--muted-foreground))",
+                          },
+                        }}
+                        className="h-[250px]"
+                      >
                         <LineChart data={shotVelocityData}>
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                           <XAxis
                             dataKey="shotNumber"
-                            stroke="#888888"
+                            stroke="hsl(var(--muted-foreground))"
                             fontSize={11}
                             label={{ value: "Shot Number", position: "insideBottom", offset: -5, fontSize: 11 }}
                           />
                           <YAxis
-                            stroke="#888888"
+                            stroke="hsl(var(--muted-foreground))"
                             fontSize={11}
                             label={{ value: "Velocity (fps)", angle: -90, position: "insideLeft", fontSize: 11 }}
                             domain={["auto", "auto"]}
                           />
-                          <Tooltip
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload
-                                const sessionStats = velocityStats.find((s) => s!.sessionId === data.sessionId)
-                                return (
-                                  <div className="rounded-lg border bg-background p-3 shadow-md">
-                                    <p className="text-sm font-medium">Shot #{data.shotNumber}</p>
-                                    <p className="text-sm">
-                                      Velocity: <span className="font-bold">{data.velocity} fps</span>
-                                    </p>
-                                    {sessionStats && (
-                                      <>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                          Mean: {sessionStats.mean} fps
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                          Δ: {data.velocity > sessionStats.mean ? "+" : ""}
-                                          {data.velocity - sessionStats.mean} fps
-                                        </p>
-                                      </>
-                                    )}
-                                    <p className="text-xs text-muted-foreground mt-1">{data.sessionDate}</p>
-                                  </div>
-                                )
-                              }
-                              return null
-                            }}
+                          <ChartTooltip
+                            content={
+                              <ChartTooltipContent
+                                formatter={(value, name, item) => {
+                                  const data = item.payload
+                                  const sessionStats = velocityStats.find((s) => s!.sessionId === data.sessionId)
+                                  return (
+                                    <div className="flex flex-col gap-1">
+                                      <div className="font-medium">Shot #{data.shotNumber}</div>
+                                      <div className="text-sm">
+                                        Velocity: <span className="font-bold">{data.velocity} fps</span>
+                                      </div>
+                                      {sessionStats && (
+                                        <>
+                                          <div className="text-xs text-muted-foreground">
+                                            Mean: {sessionStats.mean} fps
+                                          </div>
+                                          <div className="text-xs text-muted-foreground">
+                                            Δ: {data.velocity > sessionStats.mean ? "+" : ""}
+                                            {data.velocity - sessionStats.mean} fps
+                                          </div>
+                                        </>
+                                      )}
+                                      <div className="text-xs text-muted-foreground">{data.sessionDate}</div>
+                                    </div>
+                                  )
+                                }}
+                              />
+                            }
                           />
                           {/* Add mean reference line for single session */}
                           {selectedSessions.length === 1 && velocityStats[0] && (
                             <ReferenceLine
                               y={velocityStats[0].mean}
-                              stroke="hsl(var(--muted-foreground))"
+                              stroke="var(--color-mean)"
                               strokeDasharray="3 3"
-                              label={{ value: `Mean: ${velocityStats[0].mean} fps`, position: "right", fontSize: 11 }}
+                              strokeWidth={2}
+                              label={{
+                                value: `Mean: ${velocityStats[0].mean} fps`,
+                                position: "right",
+                                fontSize: 11,
+                                fill: "hsl(var(--muted-foreground))",
+                              }}
                             />
                           )}
                           <Line
                             type="monotone"
                             dataKey="velocity"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={2}
-                            dot={{ r: 4, fill: "hsl(var(--primary))" }}
-                            activeDot={{ r: 6 }}
+                            stroke="var(--color-velocity)"
+                            strokeWidth={3}
+                            dot={{
+                              r: 5,
+                              fill: "var(--color-velocity)",
+                              strokeWidth: 2,
+                              stroke: "hsl(var(--background))",
+                            }}
+                            activeDot={{ r: 7, strokeWidth: 2 }}
                           />
                         </LineChart>
-                      </ResponsiveContainer>
+                      </ChartContainer>
                     </CardContent>
                   </Card>
                 )}
@@ -587,7 +620,15 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ResponsiveContainer width="100%" height={400}>
+                      <ChartContainer
+                        config={{
+                          shots: {
+                            label: "Shots",
+                            color: "hsl(var(--chart-2))",
+                          },
+                        }}
+                        className="h-[400px]"
+                      >
                         <ScatterChart>
                           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                           <XAxis
@@ -595,7 +636,7 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                             dataKey="x"
                             name="Horizontal"
                             unit='"'
-                            stroke="#888888"
+                            stroke="hsl(var(--muted-foreground))"
                             fontSize={11}
                             domain={["auto", "auto"]}
                           />
@@ -604,34 +645,32 @@ export function AnalyticsContent({ profile, sessions }: AnalyticsContentProps) {
                             dataKey="y"
                             name="Vertical"
                             unit='"'
-                            stroke="#888888"
+                            stroke="hsl(var(--muted-foreground))"
                             fontSize={11}
                             domain={["auto", "auto"]}
                           />
-                          <ZAxis type="number" dataKey="shotNumber" range={[100, 400]} name="Shot #" />
-                          <Tooltip
-                            cursor={{ strokeDasharray: "3 3" }}
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                return (
-                                  <div className="rounded-lg border bg-background p-3 shadow-md">
-                                    <p className="text-sm font-medium">Shot #{payload[0].payload.shotNumber}</p>
-                                    <p className="text-xs text-muted-foreground">H: {payload[0].payload.x}"</p>
-                                    <p className="text-xs text-muted-foreground">V: {payload[0].payload.y}"</p>
-                                    {payload[0].payload.velocity && (
-                                      <p className="text-xs text-muted-foreground">
-                                        Velocity: {payload[0].payload.velocity} fps
-                                      </p>
+                          <ZAxis type="number" dataKey="shotNumber" range={[200, 400]} name="Shot #" />
+                          <ChartTooltip
+                            content={
+                              <ChartTooltipContent
+                                formatter={(value, name, item) => (
+                                  <div className="flex flex-col gap-1">
+                                    <div className="font-medium">Shot #{item.payload.shotNumber}</div>
+                                    <div className="text-xs text-muted-foreground">H: {item.payload.x}"</div>
+                                    <div className="text-xs text-muted-foreground">V: {item.payload.y}"</div>
+                                    {item.payload.velocity && (
+                                      <div className="text-xs text-muted-foreground">
+                                        Velocity: {item.payload.velocity} fps
+                                      </div>
                                     )}
                                   </div>
-                                )
-                              }
-                              return null
-                            }}
+                                )}
+                              />
+                            }
                           />
-                          <Scatter data={shotDistributionData} fill="hsl(var(--primary))" />
+                          <Scatter data={shotDistributionData} fill="var(--color-shots)" />
                         </ScatterChart>
-                      </ResponsiveContainer>
+                      </ChartContainer>
                     </CardContent>
                   </Card>
                 )}
