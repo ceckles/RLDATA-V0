@@ -14,11 +14,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect("/auth/login")
   }
 
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("id, email, subscription_status, subscription_end_date, role")
+    .eq("id", user.id)
+    .single()
 
+  console.log("[v0] Profile query error:", error)
   console.log("[v0] Profile data:", profile)
   console.log("[v0] Profile role:", profile?.role)
-  console.log("[v0] User ID:", user.id)
 
   return (
     <div className="flex min-h-screen flex-col">
