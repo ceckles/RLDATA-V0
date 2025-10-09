@@ -73,6 +73,14 @@ export async function POST(request: Request) {
       case "subscription_updated": {
         const subscription = event.data.attributes
 
+        console.log("[v0] Subscription event received:", {
+          eventName,
+          userId,
+          subscriptionStatus: subscription?.status,
+          subscriptionId: event.data.id,
+          endsAt: subscription?.ends_at,
+        })
+
         if (userId) {
           // Update profile
           const { data, error } = await supabase
@@ -89,7 +97,7 @@ export async function POST(request: Request) {
             .select()
 
           if (error) {
-            console.error("Failed to update profile:", error)
+            console.error("[v0] Failed to update profile:", error)
             const processingTime = Date.now() - startTime
             await logWebhookEvent(
               supabase,
@@ -104,28 +112,51 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Failed to update profile", details: error.message }, { status: 500 })
           }
 
+          console.log("[v0] Profile updated successfully:", data)
+
           const hasSubscriberRole = await userHasRole(userId, "subscriber")
+          console.log("[v0] User has subscriber role:", hasSubscriberRole)
+          console.log("[v0] Subscription status:", subscription?.status)
+
           if (!hasSubscriberRole && subscription?.status === "active") {
-            await assignRole(userId, "subscriber", userId, {
-              notes: `Auto-assigned via ${eventName}`,
-              expiresAt: subscription?.ends_at || null,
-            })
+            console.log("[v0] Attempting to assign subscriber role...")
+            try {
+              const assignResult = await assignRole(userId, "subscriber", userId, {
+                notes: `Auto-assigned via ${eventName}`,
+                expiresAt: subscription?.ends_at || null,
+              })
+              console.log("[v0] Subscriber role assigned successfully:", assignResult)
+            } catch (assignError) {
+              console.error("[v0] Failed to assign subscriber role:", assignError)
+            }
           } else if (hasSubscriberRole && subscription?.status === "active") {
+            console.log("[v0] Updating existing subscriber role expiration...")
             // Update existing role with new expiration date
             const { data: roleData } = await supabase.from("roles").select("id").eq("name", "subscriber").single()
 
             if (roleData) {
-              await supabase
+              const { error: updateError } = await supabase
                 .from("user_roles")
                 .update({
                   expires_at: subscription?.ends_at || null,
                 })
                 .eq("user_id", userId)
                 .eq("role_id", roleData.id)
+
+              if (updateError) {
+                console.error("[v0] Failed to update role expiration:", updateError)
+              } else {
+                console.log("[v0] Role expiration updated successfully")
+              }
             }
+          } else {
+            console.log("[v0] Skipping role assignment:", {
+              hasSubscriberRole,
+              subscriptionStatus: subscription?.status,
+            })
           }
         } else {
-          console.error("Cannot update profile - no user_id")
+          console.error("[v0] Cannot update profile - no user_id")
         }
         break
       }
