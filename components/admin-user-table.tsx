@@ -114,7 +114,11 @@ export function AdminUserTable({ users }: AdminUserTableProps) {
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {user.created_at ? formatDistanceToNow(new Date(user.created_at), { addSuffix: true }) : "Unknown"}
+                    <span suppressHydrationWarning>
+                      {user.created_at
+                        ? formatDistanceToNow(new Date(user.created_at), { addSuffix: true })
+                        : "Unknown"}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => handleManageRoles(user)}>

@@ -67,7 +67,9 @@ export function AdminAuditLog({ logs }: AdminAuditLogProps) {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {log.performed_by ? `By ${log.performed_by.slice(0, 8)}...` : "System"} •{" "}
-                  {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                  <span suppressHydrationWarning>
+                    {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                  </span>
                 </p>
                 {log.reason && <p className="text-xs text-muted-foreground italic">{log.reason}</p>}
               </div>

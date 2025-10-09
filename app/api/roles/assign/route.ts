@@ -24,19 +24,28 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { userId, roleName, expiresAt, notes } = body
+    const { userId, roleId, roleName, expiresAt, notes } = body
 
-    if (!userId || !roleName) {
-      return NextResponse.json({ error: "Missing required fields: userId, roleName" }, { status: 400 })
+    if (!userId || (!roleId && !roleName)) {
+      return NextResponse.json({ error: "Missing required fields: userId and (roleId or roleName)" }, { status: 400 })
     }
 
-    // Validate role name
-    const validRoles: UserRole[] = ["admin", "moderator", "subscriber", "donator", "tester"]
-    if (!validRoles.includes(roleName)) {
+    let finalRoleName = roleName
+    if (roleId && !roleName) {
+      const { data: roleData, error: roleError } = await supabase.from("roles").select("name").eq("id", roleId).single()
+
+      if (roleError || !roleData) {
+        return NextResponse.json({ error: "Invalid role ID" }, { status: 400 })
+      }
+      finalRoleName = roleData.name
+    }
+
+    const validRoles: UserRole[] = ["admin", "moderator", "subscriber", "donator", "tester", "user"]
+    if (!validRoles.includes(finalRoleName)) {
       return NextResponse.json({ error: "Invalid role name" }, { status: 400 })
     }
 
-    const result = await assignRole(userId, roleName, user.id, {
+    const result = await assignRole(userId, finalRoleName, user.id, {
       expiresAt,
       notes,
     })
