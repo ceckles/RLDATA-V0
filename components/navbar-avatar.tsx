@@ -28,9 +28,9 @@ export function NavbarAvatar({ ssoAvatarUrl, userEmail, className }: NavbarAvata
       if (user) {
         const { data: profile } = await supabase.from("profiles").select("avatar_url").eq("id", user.id).single()
 
-        setAvatarUrl(profile?.avatar_url || ssoAvatarUrl || "/default-avatar.png")
+        setAvatarUrl(profile?.avatar_url || ssoAvatarUrl || null)
       } else {
-        setAvatarUrl(ssoAvatarUrl || "/default-avatar.png")
+        setAvatarUrl(ssoAvatarUrl || null)
       }
       setIsLoading(false)
     }
@@ -39,11 +39,11 @@ export function NavbarAvatar({ ssoAvatarUrl, userEmail, className }: NavbarAvata
   }, [ssoAvatarUrl])
 
   const fallbackText = userEmail?.charAt(0).toUpperCase() || "U"
-  const finalAvatarUrl = avatarUrl || ssoAvatarUrl || "/default-avatar.png"
+  const finalAvatarUrl = avatarUrl || ssoAvatarUrl
 
   return (
     <Avatar className={className}>
-      <AvatarImage src={finalAvatarUrl || "/placeholder.svg"} alt="User avatar" />
+      {finalAvatarUrl && <AvatarImage src={finalAvatarUrl || "/placeholder.svg"} alt="User avatar" />}
       <AvatarFallback>{fallbackText}</AvatarFallback>
     </Avatar>
   )

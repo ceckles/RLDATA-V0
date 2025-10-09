@@ -11,7 +11,7 @@ interface UserAvatarProps {
 }
 
 export function UserAvatar({ profile, ssoAvatarUrl, className, fallbackText }: UserAvatarProps) {
-  const avatarUrl = profile?.avatar_url || ssoAvatarUrl || "/default-avatar.png"
+  const avatarUrl = profile?.avatar_url || ssoAvatarUrl
 
   // Generate fallback initials from name or email
   const getFallbackText = () => {
@@ -32,7 +32,9 @@ export function UserAvatar({ profile, ssoAvatarUrl, className, fallbackText }: U
 
   return (
     <Avatar className={className}>
-      <AvatarImage src={avatarUrl || "/placeholder.svg"} alt={profile?.full_name || "User avatar"} key={avatarUrl} />
+      {avatarUrl && (
+        <AvatarImage src={avatarUrl || "/placeholder.svg"} alt={profile?.full_name || "User avatar"} key={avatarUrl} />
+      )}
       <AvatarFallback>{getFallbackText()}</AvatarFallback>
     </Avatar>
   )
