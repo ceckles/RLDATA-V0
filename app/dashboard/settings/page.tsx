@@ -6,6 +6,7 @@ import { ManageSubscriptionButton } from "@/components/manage-subscription-butto
 import { AccountSettings } from "@/components/account-settings"
 import { CookieSettingsButton } from "@/components/cookie-settings-button"
 import { UserRolesCard } from "@/components/user-roles-card"
+import { SyncSubscriptionButton } from "@/components/sync-subscription-button"
 import { Settings } from "lucide-react"
 import { getUserRoles } from "@/lib/roles"
 
@@ -39,7 +40,10 @@ export default async function SettingsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <AccountSettings profile={profile} ssoAvatarUrl={ssoAvatarUrl} />
 
-        <UserRolesCard roles={userRoles} />
+        <div className="space-y-4">
+          <UserRolesCard roles={userRoles} />
+          <SyncSubscriptionButton />
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
