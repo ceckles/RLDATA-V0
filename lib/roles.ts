@@ -74,7 +74,6 @@ export async function assignRole(
   assignedBy: string,
   options?: {
     expiresAt?: string
-    lemonSqueezyOrderId?: string
     notes?: string
   },
 ): Promise<{ success: boolean; error?: string }> {
@@ -93,7 +92,6 @@ export async function assignRole(
     role_id: role.id,
     assigned_by: assignedBy,
     expires_at: options?.expiresAt || null,
-    lemon_squeezy_order_id: options?.lemonSqueezyOrderId || null,
     notes: options?.notes || null,
   })
 
