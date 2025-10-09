@@ -6,9 +6,8 @@ import { ManageSubscriptionButton } from "@/components/manage-subscription-butto
 import { AccountSettings } from "@/components/account-settings"
 import { CookieSettingsButton } from "@/components/cookie-settings-button"
 import { UserRolesCard } from "@/components/user-roles-card"
-import { SyncSubscriptionButton } from "@/components/sync-subscription-button"
 import { Settings } from "lucide-react"
-import { getUserRoles } from "@/lib/roles"
+import { getUserRoles, assignRole, removeRole, userHasRole } from "@/lib/roles"
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -25,6 +24,28 @@ export default async function SettingsPage() {
 
   const ssoAvatarUrl = user.user_metadata?.avatar_url || null
 
+  const hasSubscriberRole = await userHasRole(user.id, "subscriber")
+  const hasActiveSubscription = profile.subscription_tier === "premium" && profile.subscription_status === "active"
+
+  if (hasActiveSubscription && !hasSubscriberRole) {
+    // User has active subscription but no subscriber role - assign it
+    try {
+      await assignRole(user.id, "subscriber", user.id, {
+        notes: "Auto-assigned on settings page load",
+        expiresAt: profile.subscription_ends_at || null,
+      })
+    } catch (error) {
+      console.error("[v0] Failed to auto-assign subscriber role:", error)
+    }
+  } else if (!hasActiveSubscription && hasSubscriberRole) {
+    // User doesn't have active subscription but has subscriber role - remove it
+    try {
+      await removeRole(user.id, "subscriber", user.id, "Auto-removed - no active subscription")
+    } catch (error) {
+      console.error("[v0] Failed to auto-remove subscriber role:", error)
+    }
+  }
+
   const userRoles = await getUserRoles(user.id)
 
   return (
@@ -40,10 +61,7 @@ export default async function SettingsPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <AccountSettings profile={profile} ssoAvatarUrl={ssoAvatarUrl} />
 
-        <div className="space-y-4">
-          <UserRolesCard roles={userRoles} />
-          <SyncSubscriptionButton />
-        </div>
+        <UserRolesCard roles={userRoles} />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
