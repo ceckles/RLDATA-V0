@@ -7,16 +7,20 @@ interface RoleBadgesListProps {
 }
 
 export function RoleBadgesList({ roles, className }: RoleBadgesListProps) {
-  if (roles.length === 0) {
+  if (!roles || roles.length === 0) {
     return null
   }
 
   return (
     <div className={className}>
       <div className="flex flex-wrap gap-2">
-        {roles.map((role) => (
-          <RoleBadge key={role.role_name} role={role.role_name} description={role.role_description} />
-        ))}
+        {roles.map((role) => {
+          if (!role || !role.role_name) {
+            console.error("[v0] Invalid role data:", role)
+            return null
+          }
+          return <RoleBadge key={role.role_name} role={role.role_name as any} description={role.role_description} />
+        })}
       </div>
     </div>
   )

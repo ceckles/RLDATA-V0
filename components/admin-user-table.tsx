@@ -40,11 +40,13 @@ export function AdminUserTable({ users }: AdminUserTableProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [manageRolesOpen, setManageRolesOpen] = useState(false)
 
-  const filteredUsers = users.filter(
+  const validUsers = users?.filter((user) => user && user.id && user.email) || []
+
+  const filteredUsers = validUsers.filter(
     (user) =>
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.roles.some((role) => role.name.toLowerCase().includes(searchQuery.toLowerCase())),
+      user.roles?.some((role) => role?.name?.toLowerCase().includes(searchQuery.toLowerCase())),
   )
 
   const handleManageRoles = (user: User) => {
@@ -95,8 +97,10 @@ export function AdminUserTable({ users }: AdminUserTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {user.roles.length > 0 ? (
-                        user.roles.map((role) => <RoleBadge key={role.id} role={role.name as any} size="sm" />)
+                      {user.roles && user.roles.length > 0 ? (
+                        user.roles
+                          .filter((role) => role && role.name)
+                          .map((role) => <RoleBadge key={role.id} role={role.name as any} size="sm" />)
                       ) : (
                         <span className="text-sm text-muted-foreground">No roles</span>
                       )}
@@ -110,7 +114,7 @@ export function AdminUserTable({ users }: AdminUserTableProps) {
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {formatDistanceToNow(new Date(user.created_at), { addSuffix: true })}
+                    {user.created_at ? formatDistanceToNow(new Date(user.created_at), { addSuffix: true }) : "Unknown"}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" onClick={() => handleManageRoles(user)}>

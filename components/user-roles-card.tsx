@@ -11,6 +11,8 @@ interface UserRolesCardProps {
 }
 
 export function UserRolesCard({ roles }: UserRolesCardProps) {
+  const validRoles = roles?.filter((role) => role && role.role_name) || []
+
   return (
     <Card>
       <CardHeader>
@@ -18,14 +20,14 @@ export function UserRolesCard({ roles }: UserRolesCardProps) {
         <CardDescription>Active roles and permissions assigned to your account</CardDescription>
       </CardHeader>
       <CardContent>
-        {roles.length === 0 ? (
+        {validRoles.length === 0 ? (
           <p className="text-sm text-muted-foreground">No special roles assigned</p>
         ) : (
           <div className="space-y-4">
-            <RoleBadgesList roles={roles} />
+            <RoleBadgesList roles={validRoles} />
 
             <div className="space-y-3 pt-2">
-              {roles.map((role) => (
+              {validRoles.map((role) => (
                 <div
                   key={role.role_name}
                   className="flex items-start justify-between gap-4 rounded-lg border p-3 text-sm"
@@ -35,10 +37,12 @@ export function UserRolesCard({ roles }: UserRolesCardProps) {
                     {role.role_description && <p className="text-xs text-muted-foreground">{role.role_description}</p>}
                   </div>
                   <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>Assigned {formatDistanceToNow(new Date(role.assigned_at), { addSuffix: true })}</span>
-                    </div>
+                    {role.assigned_at && (
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>Assigned {formatDistanceToNow(new Date(role.assigned_at), { addSuffix: true })}</span>
+                      </div>
+                    )}
                     {role.expires_at && (
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
