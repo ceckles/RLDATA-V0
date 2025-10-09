@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   title: "ReloadData - Reloading Data Management",
   description: "Track your reloading components, firearms, and shooting sessions",
   generator: "v0.app",
+  icons: {
+    icon: "/favicon.ico",
+  },
 }
 
 export default function RootLayout({

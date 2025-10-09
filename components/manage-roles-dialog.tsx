@@ -30,7 +30,7 @@ interface User {
   id: string
   email: string
   full_name: string | null
-  roles: UserRole[]
+  roles: UserRole[] | null
 }
 
 interface ManageRolesDialogProps {
@@ -57,7 +57,7 @@ export function ManageRolesDialog({ open, onOpenChange, user }: ManageRolesDialo
   useEffect(() => {
     if (open) {
       fetchAvailableRoles()
-      setSelectedRoles(new Set(user.roles.map((r) => r.name)))
+      setSelectedRoles(new Set(user.roles?.map((r) => r.name) || []))
     }
   }, [open, user])
 
@@ -94,7 +94,7 @@ export function ManageRolesDialog({ open, onOpenChange, user }: ManageRolesDialo
   const handleSave = async () => {
     setSaving(true)
     try {
-      const currentRoleNames = new Set(user.roles.map((r) => r.name))
+      const currentRoleNames = new Set(user.roles?.map((r) => r.name) || [])
       const rolesToAdd = Array.from(selectedRoles).filter((r) => !currentRoleNames.has(r))
       const rolesToRemove = Array.from(currentRoleNames).filter((r) => !selectedRoles.has(r))
 
@@ -120,7 +120,7 @@ export function ManageRolesDialog({ open, onOpenChange, user }: ManageRolesDialo
 
       // Remove roles
       for (const roleName of rolesToRemove) {
-        const role = user.roles.find((r) => r.name === roleName)
+        const role = user.roles?.find((r) => r.name === roleName)
         if (!role) continue
 
         const response = await fetch("/api/roles/remove", {

@@ -67,15 +67,19 @@ export default async function AdminPage() {
       ...user,
       roles:
         roleAssignments
-          ?.filter((ra) => ra.user_id === user.id)
-          .map((ra) => ({
-            id: ra.role_id,
-            name: (ra.roles as any)?.name || "",
-            display_name: (ra.roles as any)?.name || "",
-            description: (ra.roles as any)?.description || "",
-            assigned_at: ra.assigned_at,
-            expires_at: ra.expires_at,
-          })) || [],
+          ?.filter((ra) => ra.user_id === user.id && ra.roles)
+          .map((ra) => {
+            const roleData = ra.roles as any
+            return {
+              id: ra.role_id,
+              name: roleData?.name || "unknown",
+              display_name: roleData?.name || "Unknown",
+              description: roleData?.description || "",
+              assigned_at: ra.assigned_at,
+              expires_at: ra.expires_at,
+            }
+          })
+          .filter((role) => role.name !== "unknown") || [],
     })) || []
 
   const totalUsers = users?.length || 0
