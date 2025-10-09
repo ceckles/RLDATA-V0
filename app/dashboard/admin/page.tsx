@@ -20,39 +20,23 @@ export default async function AdminPage() {
     redirect("/auth/login")
   }
 
-  // Check if user has admin role
+  // Check if user is admin
   const isAdmin = await hasRole(user.id, "admin")
 
   if (!isAdmin) {
     redirect("/unauthorized")
   }
 
-  // Fetch all users with their profiles and roles
   const { data: users, error: usersError } = await supabase
     .from("profiles")
-    .select(
-      `
-      id,
-      email,
-      full_name,
-      avatar_url,
-      subscription_status,
-      subscription_tier,
-      subscription_end_date,
-      created_at
-    `,
-    )
+    .select("*")
     .order("created_at", { ascending: false })
 
   if (usersError) {
-    console.error("Error fetching users:", usersError)
+    console.error("[v0] Error fetching users:", usersError)
   }
 
-  // Fetch role assignments for all users
-  const { data: roleAssignments, error: rolesError } = await supabase
-    .from("user_roles")
-    .select(
-      `
+  const { data: roleAssignments, error: rolesError } = await supabase.from("user_roles").select(`
       user_id,
       role_id,
       assigned_at,
@@ -60,51 +44,24 @@ export default async function AdminPage() {
       roles (
         id,
         name,
-        display_name,
         description
       )
-    `,
-    )
-    .order("assigned_at", { ascending: false })
+    `)
 
   if (rolesError) {
-    console.error("Error fetching role assignments:", rolesError)
+    console.error("[v0] Error fetching role assignments:", rolesError)
   }
 
-  // Fetch audit logs
   const { data: auditLogs, error: auditError } = await supabase
     .from("role_audit_log")
-    .select(
-      `
-      id,
-      user_id,
-      role_id,
-      action,
-      performed_by,
-      performed_at,
-      metadata,
-      roles (
-        name,
-        display_name
-      ),
-      profiles!role_audit_log_user_id_fkey (
-        email,
-        full_name
-      ),
-      admin:profiles!role_audit_log_performed_by_fkey (
-        email,
-        full_name
-      )
-    `,
-    )
-    .order("performed_at", { ascending: false })
+    .select("*")
+    .order("created_at", { ascending: false })
     .limit(50)
 
   if (auditError) {
-    console.error("Error fetching audit logs:", auditError)
+    console.error("[v0] Error fetching audit logs:", auditError)
   }
 
-  // Combine users with their roles
   const usersWithRoles =
     users?.map((user) => ({
       ...user,
@@ -113,19 +70,27 @@ export default async function AdminPage() {
           ?.filter((ra) => ra.user_id === user.id)
           .map((ra) => ({
             id: ra.role_id,
-            name: ra.roles?.name || "",
-            display_name: ra.roles?.display_name || "",
-            description: ra.roles?.description || "",
+            name: (ra.roles as any)?.name || "",
+            display_name: (ra.roles as any)?.name || "",
+            description: (ra.roles as any)?.description || "",
             assigned_at: ra.assigned_at,
             expires_at: ra.expires_at,
           })) || [],
     })) || []
 
-  // Calculate stats
   const totalUsers = users?.length || 0
   const premiumUsers = users?.filter((u) => u.subscription_tier === "premium").length || 0
   const adminUsers = usersWithRoles.filter((u) => u.roles.some((r) => r.name === "admin")).length
   const subscriberUsers = usersWithRoles.filter((u) => u.roles.some((r) => r.name === "subscriber")).length
+
+  console.log("[v0] Admin dashboard data:", {
+    totalUsers,
+    premiumUsers,
+    adminUsers,
+    subscriberUsers,
+    usersWithRolesCount: usersWithRoles.length,
+    auditLogsCount: auditLogs?.length || 0,
+  })
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-6 space-y-6">
