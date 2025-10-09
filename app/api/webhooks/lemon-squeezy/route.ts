@@ -108,7 +108,21 @@ export async function POST(request: Request) {
           if (!hasSubscriberRole && subscription?.status === "active") {
             await assignRole(userId, "subscriber", userId, {
               notes: `Auto-assigned via ${eventName}`,
+              expiresAt: subscription?.ends_at || null,
             })
+          } else if (hasSubscriberRole && subscription?.status === "active") {
+            // Update existing role with new expiration date
+            const { data: roleData } = await supabase.from("roles").select("id").eq("name", "subscriber").single()
+
+            if (roleData) {
+              await supabase
+                .from("user_roles")
+                .update({
+                  expires_at: subscription?.ends_at || null,
+                })
+                .eq("user_id", userId)
+                .eq("role_id", roleData.id)
+            }
           }
         } else {
           console.error("Cannot update profile - no user_id")
@@ -153,7 +167,21 @@ export async function POST(request: Request) {
           if (!hasSubscriberRole) {
             await assignRole(userId, "subscriber", userId, {
               notes: "Auto-assigned via subscription_resumed",
+              expiresAt: subscription?.ends_at || null,
             })
+          } else {
+            // Update existing role with new expiration date
+            const { data: roleData } = await supabase.from("roles").select("id").eq("name", "subscriber").single()
+
+            if (roleData) {
+              await supabase
+                .from("user_roles")
+                .update({
+                  expires_at: subscription?.ends_at || null,
+                })
+                .eq("user_id", userId)
+                .eq("role_id", roleData.id)
+            }
           }
         }
         break
