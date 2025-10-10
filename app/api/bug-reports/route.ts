@@ -57,7 +57,14 @@ export async function POST(request: NextRequest) {
 
       if (uploadError) {
         console.error("[v0] Error uploading screenshot:", uploadError)
-        return NextResponse.json({ error: "Failed to upload screenshot" }, { status: 500 })
+        return NextResponse.json(
+          {
+            error: "Failed to upload screenshot",
+            details: uploadError.message,
+            hint: "Make sure the 'bug-reports' storage bucket exists in Supabase",
+          },
+          { status: 500 },
+        )
       }
 
       // Get public URL
