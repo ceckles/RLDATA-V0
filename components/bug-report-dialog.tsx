@@ -80,15 +80,23 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
         formData.append("screenshot", screenshot)
       }
 
+      console.log("[v0] Submitting bug report with screenshot:", !!screenshot)
+
       const response = await fetch("/api/bug-reports", {
         method: "POST",
         body: formData,
       })
 
+      console.log("[v0] Response status:", response.status)
+
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(error.error || "Failed to submit bug report")
+        console.error("[v0] Server error response:", error)
+        throw new Error(error.details || error.error || "Failed to submit bug report")
       }
+
+      const result = await response.json()
+      console.log("[v0] Bug report submitted successfully:", result)
 
       toast({
         title: "Bug report submitted",
