@@ -2,6 +2,7 @@ import type React from "react"
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { DashboardNav } from "@/components/dashboard-nav"
+import { BugReportButton } from "@/components/bug-report-button"
 
 export const revalidate = 0
 
@@ -28,6 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex min-h-screen flex-col">
       <DashboardNav profile={profile} ssoAvatarUrl={ssoAvatarUrl} />
       <main className="flex-1">{children}</main>
+      <BugReportButton />
     </div>
   )
 }

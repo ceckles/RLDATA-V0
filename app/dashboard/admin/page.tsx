@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AdminUserTable } from "@/components/admin-user-table"
 import { AdminStats } from "@/components/admin-stats"
 import { AdminAuditLog } from "@/components/admin-audit-log"
+import { AdminBugReports } from "@/components/admin-bug-reports"
 import { Shield, Users, Activity } from "lucide-react"
 import { hasRole } from "@/lib/roles"
 
@@ -128,6 +129,8 @@ export default async function AdminPage() {
           <AdminUserTable users={usersWithRoles} />
         </CardContent>
       </Card>
+
+      <AdminBugReports />
 
       <Card>
         <CardHeader>
